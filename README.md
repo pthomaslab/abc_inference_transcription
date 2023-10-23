@@ -1,2 +1,2 @@
 # abc_inference_transcription
-Bayesian inference of transcription dynamics from time-resolved single-cell data
+Code and data produced for the manuscript "Global transcription regulation revealed from dynamical correlations in time-resolved single-cell RNA-sequencing".
