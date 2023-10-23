@@ -511,6 +511,59 @@ savefig(p, "data/paper_figures/figure_4/burst_size.png")
 
 
 
+###########################     distributions of posterior estimates across genes     ##########################
+
+vary_flags::Vector{Vector{Int64}} = [[0,0,0,0],[0,0,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]]
+vary_maps::Vector{Vector{Any}} = [get_vary_map(vary_flag,5) for vary_flag in vary_flags];
+
+col = [:skyblue4, :seagreen4, :gold]
+
+p = violin(vcat(map_sets[1][:,vary_maps[1][4]],map_sets[2][:,vary_maps[2][4]]), xticks = ([1:4;],["constant \ngenes","burst frequency \ngenes","burst size \ngenes","decay rate \ngenes"]), 
+    linewidth = 1, linealpha = 0.7,color = :grey, label = false, outliers = false);
+p = violin!(map_sets[3][:,vary_maps[3][4]], linewidth = 1, color = col[1], label = false, legendfontsize = 9, 
+background_color_legend = :transparent,legend = :topleft,fg_legend = :transparent, size = (400,300), ylabel = "log₁₀(decay rate)", outliers = false)
+p = violin!(map_sets[4][:,vary_maps[4][4]], linewidth = 1,linealpha = 0.7, color = col[2], label = false, outliers = false)
+
+p = violin!(vec(map_sets[5][:,vary_maps[5][4]]), linewidth = 1, linealpha = 0.7,color = col[3], label = false, outliers = false)
+savefig(p, "data/paper_figures/figure_2/decay_rates.svg")
+savefig(p, "data/paper_figures/figure_2/decay_rates.png")
+
+
+p = violin(vcat(map_sets[1][:,vary_maps[1][1]],map_sets[2][:,vary_maps[2][1]]), xticks = ([1:4;],["constant \ngenes","burst frequency \ngenes","burst size \ngenes","decay rate \ngenes"]), 
+        linewidth = 1, linealpha = 0.7,color = :grey, label = false, outliers = false);
+p = violin!(vec(map_sets[3][:,vary_maps[3][1]]), linewidth = 1, color = col[1], label = false, legendfontsize = 9, 
+background_color_legend = :transparent,legend = :topleft,fg_legend = :transparent, size = (400,300), ylabel = "log₁₀(burst frequency)", outliers = false)
+p = violin!(map_sets[4][:,vary_maps[4][1]] , linewidth = 1,linealpha = 0.7, color = col[2], label = false, outliers = false)
+p = violin!(map_sets[5][:,vary_maps[5][1]], linewidth = 1, linealpha = 0.7,color = col[3], label = false, outliers = false)
+
+savefig(p, "data/paper_figures/figure_2/burst_freq.svg")
+savefig(p, "data/paper_figures/figure_2/burst_freq.png")
+
+
+p = violin(vcat(map_sets[1][:,vary_maps[1][3]] .- map_sets[1][:,vary_maps[1][2]],map_sets[2][:,vary_maps[2][3]] .- map_sets[2][:,vary_maps[2][2]]), xticks = ([1:4;],["constant \ngenes","burst frequency \ngenes","burst size \ngenes","decay rate \ngenes"]), 
+        linewidth = 1, linealpha = 0.7,color = :grey, label = false, outliers = false);
+p = violin!(map_sets[3][:,vary_maps[3][3]] .- map_sets[3][:,vary_maps[3][2]], linewidth = 1, color = col[1], label = false, legendfontsize = 9, 
+background_color_legend = :transparent,legend = :topleft,fg_legend = :transparent, size = (400,300), ylabel = "log₁₀(burst size)", outliers = false)
+p = violin!(vec(map_sets[4][:,vary_maps[4][3]] .- map_sets[4][:,vary_maps[4][2]]), linewidth = 1,linealpha = 0.7, color = col[2], label = false, outliers = false)
+p = violin!(map_sets[5][:,vary_maps[5][3]] .- map_sets[5][:,vary_maps[5][2]], linewidth = 1, linealpha = 0.7,color = col[3], label = false, outliers = false)
+
+savefig(p, "data/paper_figures/figure_2/burst_size.svg")
+savefig(p, "data/paper_figures/figure_2/burst_size.png")
+
+
+x = mean(t_data,dims=1)[1,:]
+p = violin(vcat(x[sel_genes[1]],x[sel_genes[2]]), xticks = ([1:4;],["constant \ngenes","burst frequency \ngenes","burst size \ngenes","decay rate \ngenes"]), 
+    linewidth = 1, linealpha = 0.7,color = :grey, label = false, ylims = (0.0,10), outliers = false);
+p = violin!(x[sel_genes[3]], linewidth = 1, color = col[1], label = false, legendfontsize = 9, 
+background_color_legend = :transparent,legend = :topleft,fg_legend = :transparent, size = (400,300), ylabel = "mean expression", outliers = false)
+p = violin!(x[sel_genes[4]], linewidth = 1,linealpha = 0.7, color = col[2], label = false, outliers = false)
+p = violin!(x[sel_genes[5]], linewidth = 1, linealpha = 0.7,color = col[3], label = false, outliers = false)
+savefig(p, "data/paper_figures/figure_2/mean_expression.svg")
+savefig(p, "data/paper_figures/figure_2/mean_expression.png")
+
+
+
+
 ###############################################################################################
 ############################### mRNA half-life analysis #######################################
 ###############################################################################################
