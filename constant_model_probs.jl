@@ -33,9 +33,9 @@ function get_model_probs(err::Matrix{Float64},ε::Float64)
     return model_prob, l_b, u_b
 end
 
-f_1 = JDFFile("Julia/large_scale_simulations/errors/error_const.jdf")
+f_1 = JDFFile("data/large_scale_simulations/errors/error_const.jdf")
 
-f_2 = JDFFile("Julia/large_scale_simulations/errors/error_const_const.jdf")
+f_2 = JDFFile("data/large_scale_simulations/errors/error_const_const.jdf")
 
 
 #set acceptance threshold ε
@@ -60,13 +60,13 @@ for g in 1:3419
     else
         model_prob,l_bound,u_bound = get_model_probs(err_mat,ε)
     end
-    open("Julia/model_selection/c_/c_model_prob.txt", "a") do io
+    open("data/model_selection/c_/c_model_prob.txt", "a") do io
         writedlm(io, reshape(model_prob,(1,:)))
     end
-    open("Julia/model_selection/c_/c_l_bound.txt", "a") do io
+    open("data/model_selection/c_/c_l_bound.txt", "a") do io
         writedlm(io, reshape(l_bound,(1,:)))
     end
-    open("Julia/model_selection/c_/c_u_bound.txt", "a") do io
+    open("data/model_selection/c_/c_u_bound.txt", "a") do io
         writedlm(io, reshape(u_bound,(1,:)))
     end
 end

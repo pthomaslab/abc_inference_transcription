@@ -7,7 +7,7 @@ using StatsBase
 
 include("load_data.jl")
 
-uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("Julia/all_data/",".csv");
+uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("data/",".csv");
 total_data = uu_data + us_data + lu_data + ls_data;
 
 ###############  1st filtering  ###############
@@ -15,14 +15,14 @@ total_data = uu_data + us_data + lu_data + ls_data;
 #=
 tc_l = sum(lu_data .+ ls_data,dims=1)[1,:]
 all_genes = findall(x->x>=500.0, tc_l)
-writedlm("Julia/all_data/selected_genes.txt", all_genes)
-writedlm("Julia/all_data/all_gene_ids.txt", gene_id[all_genes,1])
-writedlm("Julia/all_data/all_gene_names.txt", gene_id[all_genes,2])
+writedlm("data/selected_genes.txt", all_genes)
+writedlm("data/all_gene_ids.txt", gene_id[all_genes,1])
+writedlm("data/all_gene_names.txt", gene_id[all_genes,2])
 =#
 
-all_genes = Int64.(readdlm("Julia/all_data/selected_genes.txt")[:,1])
-gene_id = readdlm("Julia/all_data/all_gene_ids.txt")[:,1]
-all_gene_names = readdlm("Julia/all_data/all_gene_names.txt")[:,1]
+all_genes = Int64.(readdlm("data/selected_genes.txt")[:,1])
+gene_id = readdlm("data/all_gene_ids.txt")[:,1]
+all_gene_names = readdlm("data/all_gene_names.txt")[:,1]
 
 
 pulse_idx = findall(x->x<=6, experiment)
@@ -64,5 +64,5 @@ end
 
 sel = Int64.(union(sel_1,sel_2))
 
-#writedlm("Julia/all_data/selected_genes_main_subset.txt",sel)
+#writedlm("data/selected_genes_main_subset.txt",sel)
 

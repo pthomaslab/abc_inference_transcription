@@ -28,15 +28,15 @@ function get_model_probs(err::Vector{Vector{Float64}},ε::Float64)
 end
 
 
-f_1 = JDFFile("Julia/large_scale_simulations/errors/error_const.jdf")
+f_1 = JDFFile("data/large_scale_simulations/errors/error_const.jdf")
 
-f_2 = JDFFile("Julia/large_scale_simulations/errors/error_const_const.jdf")
+f_2 = JDFFile("data/large_scale_simulations/errors/error_const_const.jdf")
 
-f_3 = JDFFile("Julia/large_scale_simulations/errors/error_kon.jdf")
+f_3 = JDFFile("data/large_scale_simulations/errors/error_kon.jdf")
 
-f_4 = JDFFile("Julia/large_scale_simulations/errors/error_alpha.jdf")
+f_4 = JDFFile("data/large_scale_simulations/errors/error_alpha.jdf")
 
-f_5 = JDFFile("Julia/large_scale_simulations/errors/error_gamma.jdf")
+f_5 = JDFFile("data/large_scale_simulations/errors/error_gamma.jdf")
 
 
 
@@ -60,13 +60,13 @@ for g in 1:3419
     else
         model_prob,l_bound,u_bound = get_model_probs(err,ε)
     end
-    open("Julia/model_selection/all/model_prob.txt", "a") do io
+    open("data/model_selection/all/model_prob.txt", "a") do io
         writedlm(io, reshape(model_prob,(1,:)))
     end
-    open("Julia/model_selection/all/l_bound.txt", "a") do io
+    open("data/model_selection/all/l_bound.txt", "a") do io
         writedlm(io, reshape(l_bound,(1,:)))
     end
-    open("Julia/model_selection/all/u_bound.txt", "a") do io
+    open("data/model_selection/all/u_bound.txt", "a") do io
         writedlm(io, reshape(u_bound,(1,:)))
     end
 end

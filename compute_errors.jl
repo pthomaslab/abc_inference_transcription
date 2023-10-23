@@ -78,11 +78,11 @@ m = 1   #2, 3, 4, 5
 model_name = ["const","const_const","kon","alpha","gamma"][m]
 
 #load model outputs
-s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean = load_s_data("Julia/large_scale_simulations/simulations_1/",model_name,".txt")
+s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean = load_s_data("data/large_scale_simulations/simulations_1/",model_name,".txt")
 
 #load data summary statistics
 pulse_data,pulse_se,chase_data,chase_se,ratio_data,ratio_se,
-mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se = load_summary_stats("Julia/all_data/summary_stats/", ".txt");
+mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se = load_summary_stats("data/summary_stats/", ".txt");
 
 @time (compute_trunc_errors(pulse_data,pulse_se,chase_data,chase_se,ratio_data,ratio_se,
         mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se,s_pulse,s_chase,s_ratios,

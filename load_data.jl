@@ -42,7 +42,7 @@ function get_gene_names(id::Vector{String})
         else
             gene_name = "nan"
         end
-        open("Julia/all_data/gene_names.txt", "a") do io
+        open("data/gene_names.txt", "a") do io
            println(io, gene_name)
         end
     end

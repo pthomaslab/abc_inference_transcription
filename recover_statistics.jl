@@ -29,9 +29,7 @@ end
 
 
 ################################### Load data ##########################################
-dir = "Julia/all_data/"
-ext = ".csv"
-uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data(dir,ext)
+uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("data/",".csv")
 total_data = uu_data + us_data + lu_data + ls_data
 
 ncells, ngenes = size(us_data)
@@ -71,13 +69,11 @@ m = 5
 model_name = ["const","const_const","kon","alpha","gamma"][m]
 
 n_groups_sims = 1
-sets = load_param_sets("Julia/large_scale_simulations/",m,n_groups_sims)
+sets = load_param_sets("data/large_scale_simulations/",m,n_groups_sims)
 
-maps = Int64.(readdlm("Julia/posteriors/map_gene_per_model.txt")[:,m])
+maps = Int64.(readdlm("data/posteriors/map_gene_per_model.txt")[:,m])
 
-#sel_genes = Int64.(readdlm("Julia/model_selection/"*model_name*"_genes.txt")[:,1])
-
-non_sel_genes = Int64.(readdlm("Julia/model_selection/undetermined_genes/"*model_name*"_genes.txt")[:,1])
+sel_genes = Int64.(readdlm("data/model_selection/"*model_name*"_genes.txt")[:,1])
 
 map_sets = sets[maps[non_sel_genes],:]
 
@@ -112,19 +108,19 @@ id_labels = ["pulse_15", "pulse_30", "pulse_45",
 @time for i in 1:length(sel_genes)
     s::Vector{Matrix{Float64}} = run_part_sim(map_sets[i,:],iv,agevec,cycle,pulsevec,chasevec,t0,vary_map,scaling,n_steps,downsampling,betas,age)
     for (k,id) in enumerate(id_labels)
-        open("Julia/recovered_statistics/"*model_name*"/"*id*"/mean_u.txt", "a") do io
+        open("data/recovered_statistics/"*model_name*"/"*id*"/mean_u.txt", "a") do io
             writedlm(io, reshape(s[k][:,1],(1,:)))
         end 
-        open("Julia/recovered_statistics/"*model_name*"/"*id*"/mean_l.txt", "a") do io
+        open("data/recovered_statistics/"*model_name*"/"*id*"/mean_l.txt", "a") do io
             writedlm(io, reshape(s[k][:,2],(1,:)))
         end 
-        open("Julia/recovered_statistics/"*model_name*"/"*id*"/var_u.txt", "a") do io
+        open("data/recovered_statistics/"*model_name*"/"*id*"/var_u.txt", "a") do io
             writedlm(io, reshape(s[k][:,3],(1,:)))
         end 
-        open("Julia/recovered_statistics/"*model_name*"/"*id*"/cov_ul.txt", "a") do io
+        open("data/recovered_statistics/"*model_name*"/"*id*"/cov_ul.txt", "a") do io
             writedlm(io, reshape(s[k][:,4],(1,:)))
         end 
-        open("Julia/recovered_statistics/"*model_name*"/"*id*"/var_l.txt", "a") do io
+        open("data/recovered_statistics/"*model_name*"/"*id*"/var_l.txt", "a") do io
             writedlm(io, reshape(s[k][:,5],(1,:)))
         end 
     end

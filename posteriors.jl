@@ -10,8 +10,7 @@ using Colors
 using StatsPlots
 using StatsBase
 
-include("data_processing.jl")
-include("inference.jl")
+include("load_data.jl")
 include("model.jl")
 
 function load_summary_stats(path::String,ext::String)
@@ -120,25 +119,6 @@ function get_n_particles(posterior::Vector{Vector{Vector{Int64}}})
     return n_particles
 end
 
-function get_posterior_estimate(sets::Matrix{Float64},posterior_idx::Vector{Vector{Int64}},gene_vec::Vector{Int64},estimate::String)
-    estimates = Matrix{Float64}(undef,(length(gene_vec),size(sets)[2]))
-    if estimate == "map"
-        for (i,g) in enumerate(gene_vec)
-            estimates[i,:] = sets[posterior_idx[g][1],:]
-        end
-    elseif estimate == "mean"
-        for (i,g) in enumerate(gene_vec)
-            posterior_sets::Matrix{Float64} = sets[posterior_idx[g],:]
-            estimates[i,:] = mean(posterior_sets,dims=1)[1,:]
-        end
-    elseif estimate == "median"
-        for (i,g) in enumerate(gene_vec)
-            posterior_sets::Matrix{Float64} = sets[posterior_idx[g],:]
-            estimates[i,:] = median(posterior_sets,dims=1)[1,:]
-        end
-    end
-    return estimates
-end
 
 function filter_quantiles(data::AbstractArray{Float64},q::Float64)
     sel = Vector{Vector}(undef,size(data)[2])
@@ -318,16 +298,16 @@ end
 #################################################################################################
 #################################################################################################
 
-all_genes = Int64.(readdlm("Julia/all_data/selected_genes.txt")[:,1])
-gene_id = readdlm("Julia/all_data/all_gene_ids.txt")[:,1]
-all_gene_names = readdlm("Julia/all_data/all_gene_names.txt")[:,1]
-genes = all_genes[Int64.(readdlm("Julia/all_data/selected_genes_main_subset.txt")[:,1])]
+all_genes = Int64.(readdlm("data/selected_genes.txt")[:,1])
+gene_id = readdlm("data/all_gene_ids.txt")[:,1]
+all_gene_names = readdlm("data/all_gene_names.txt")[:,1]
+genes = all_genes[Int64.(readdlm("data/selected_genes_main_subset.txt")[:,1])]
 ids = gene_id[genes];
 gene_names = replace(all_gene_names[genes], NaN => "NaN")
 
 
 pulse_data,pulse_se,chase_data,chase_se,ratio_data,ratio_se,
-mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se = load_summary_stats("Julia/all_data/selected_summary_stats/", ".txt");
+mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se = load_summary_stats("data/selected_summary_stats/", ".txt");
 
 pulse_mean = get_mean_subset(pulse_data)
 pulse_mean_se = get_mean_subset(pulse_se)
@@ -340,7 +320,7 @@ chase_ff_se = get_ff_subset(chase_se)
 
 
 
-uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("Julia/all_data/",".csv");
+uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("data/",".csv");
 total_data = uu_data + us_data + lu_data + ls_data;
 ncells,ngenes = size(ls_data);
 pulse_idx = findall(x->x<=6, experiment)
@@ -366,7 +346,7 @@ var_data = hcat([var(t_data[cells,:], dims = 1)[1,:] for cells in cells_per_age]
 model_names = ["const","const_const","kon","alpha","gamma"];     
 posterior = Vector{Vector{Vector{Int64}}}(undef,length(model_names))
 for (i,name) in enumerate(model_names)
-    file = open("Julia/posteriors/particles_"*name*".txt", "r")
+    file = open("data/posteriors/particles_"*name*".txt", "r")
     posterior[i] = Vector{Vector{Int64}}(undef,length(genes))
     for (j,line) in enumerate(eachline(file))
         posterior[i][j] = parse.(Int64,split(line,"\t")) ## or whatever else you want to do with the line.
@@ -381,7 +361,7 @@ n_particles = sum(n_particles_mat, dims=2)[:,1]
    
 errs = Vector{Vector{Vector{Float64}}}(undef,length(model_names));
 for (i,name) in enumerate(model_names)
-    file = open("Julia/posteriors/$ε/errors_"*name*".txt", "r")
+    file = open("data/posteriors/$ε/errors_"*name*".txt", "r")
     errs[i] = Vector{Vector{Float64}}(undef,length(genes))
     for (j,line) in enumerate(eachline(file))
         errs[i][j] = parse.(Float64,split(line,"\t")) ## or whatever else you want to do with the line.
@@ -390,7 +370,7 @@ for (i,name) in enumerate(model_names)
 end  
 
 n_groups_sims = 1
-sets = [load_param_sets("Julia/large_scale_simulations/",m,n_groups_sims) for m in 1:5]
+sets = [load_param_sets("data/large_scale_simulations/",m,n_groups_sims) for m in 1:5]
 
 
 # for each gene, get  the best performing particle per model
@@ -399,28 +379,20 @@ maps = Matrix{Int64}(undef,(length(genes),length(model_names)))
 for (j,post) in enumerate(posterior)
     maps[:,j] = [post[g][1] for g in 1:length(genes_1)]
 end
-writedlm("Julia/posteriors/map_gene_per_model.txt",maps)
+writedlm("data/posteriors/map_gene_per_model.txt",maps)
 =#
 
-maps = Int64.(readdlm("Julia/posteriors/map_gene_per_model.txt")[:,1:5])
+maps = Int64.(readdlm("data/posteriors/map_gene_per_model.txt")[:,1:5])
 
 
-sel_genes = [Int64.(readdlm("Julia/model_selection/"*mn*"_genes.txt")[:,1]) for mn in model_names]
+sel_genes = [Int64.(readdlm("data/model_selection/"*mn*"_genes.txt")[:,1]) for mn in model_names]
 
-sel_gene_ids = [ids[sel] for sel in sel_genes]
-
+#sel_gene_ids = [ids[sel] for sel in sel_genes]
 
 map_sets = [sets[m][maps[sel_genes[m],m],:] for m in 1:lastindex(model_names)];
 
-ms_df = CSV.read("Julia/model_selection/model_selection_results.txt", DataFrame);
+ms_df = CSV.read("data/model_selection/model_selection_results.txt", DataFrame);
 ms = Int64.(Matrix(ms_df[:,[1,3]]));
-#=
-for i in 1:5
-    writedlm("gene_names_$i.txt",gene_names[sel_genes[i]])
-    writedlm("gene_ids_$i.txt",sel_gene_ids[i])
-    writedlm("maps_$i.txt",map_sets[i])
-end
-=#
 
 
 #################   Compare constant scaling vs non-scaling genes   ################
@@ -430,12 +402,6 @@ map_kinetics = get_burst_kinetics(map_sets[m],m)
 #p = plot_const_posteriors(map_kinetics,m)
 
 col = [:skyblue4, :lightcyan4]
-
-h0 = density(10 .^map_sets[1][:,4],color = col[1], linewidth = 4, xlabel = "decay rate", ylabel = "probability density",label = "scaling genes",fg_legend = :transparent,
-                     legendfontsize = 10, title = "decay rate of constant genes", size = (350,250));
-h0 = density!(10 .^map_sets[2][:,4],color = col[2], linewidth = 4, label = "non-scaling genes")
-savefig(h0, "Julia/paper_figures/figure_4/decay_rates.pdf")
-
 
 
 mat_1 = mean_data[sel_genes[1],:] ./ mean_data[sel_genes[1],1]
@@ -448,14 +414,14 @@ h0 = density(filter_quantiles(mat_1[:,end],q), linewidth = 5, color = col[1], ti
             label = "scaling genes", legendfontsize = 10, fg_legend = :transparent, size = (400,300))
 h0 = density!(filter_quantiles(mat_2[:,end],q),linewidth = 5, color = col[2],label = "non-scaling genes")
 
-savefig(h0,"Julia/paper_figures/figure_4/cell_growth_const_genes.pdf")
+savefig(h0,"data/paper_figures/figure_4/cell_growth_const_genes.pdf")
 
 
 h0 = boxplot(mat_1[:,end], linewidth = 1, color = col[1], label = false, legendfontsize = 11, xtickfontsize = 11,
 background_color_legend = :transparent,legend = :topright,fg_legend = :transparent, size = (400,300), xticks = ([1,2],["scaling genes","non-scaling genes"]), ylabel = "mean expression fold change", outliers = false)
 h0 = boxplot!(mat_2[:,end], linewidth = 1, color = col[2], label = false, outliers = false)
 
-savefig(h0,"Julia/paper_figures/figure_4/fold_change_const_genes.svg")
+savefig(h0,"data/paper_figures/figure_4/fold_change_const_genes.svg")
 
 
 mat_1 = mean_data[sel_genes[1],:]
@@ -486,84 +452,87 @@ end
 p = boxplot(der_1, linewidth = 1, color = col[1], label = false, legendfontsize = 11,
 background_color_legend = :transparent,legend = :topright,fg_legend = :transparent, size = (400,300), xtickfontsize = 11,xticks = ([1,2],["scaling genes","non-scaling genes"]), ylabel = "mean rate of change",outliers=false)
 p = boxplot!(der_2, linewidth = 1, color = col[2], label = false,outliers=false)
-savefig(p, "Julia/paper_figures/figure_4/mean_deriv.svg")
+savefig(p, "data/paper_figures/figure_4/mean_deriv.svg")
 
 
 p = boxplot(curv_1, linewidth = 1, color = col[1], label = false, legendfontsize = 11,
 background_color_legend = :transparent,legend = :topright,fg_legend = :transparent, size = (400,300), xtickfontsize = 11,xticks = ([1,2],["scaling genes","non-scaling genes"]), ylabel = "mean second derivative",outliers=false)
 p = boxplot!(curv_2, linewidth = 1, color = col[2], label = false,outliers=false)
-savefig(p, "Julia/paper_figures/figure_4/mean_2nd_deriv.pdf")
+savefig(p, "data/paper_figures/figure_4/mean_2nd_deriv.pdf")
 
 
 h0 = density(ccd_noise[1], color = col[1], linewidth = 5, xlabel = "CV²", ylabel = "probability density",label = "scaling genes",fg_legend = :transparent,
                      xlims = (0.0,0.016),legend = :topleft, legendfontsize = 10, title = "cell-cycle dependence noise of constant genes      ", size = (500,300))
 h0 = density!(ccd_noise[2],color = col[2], linewidth = 5, label = "non-scaling genes")
-savefig(h0, "Julia/paper_figures/figure_4/cc_dep_noise.pdf")
+savefig(h0, "data/paper_figures/figure_4/cc_dep_noise.pdf")
 
 
 
 p = violin(map_sets[1][:,1], linewidth = 5, color = col[1], label = false, title = "burst frequency of constant genes    ", legendfontsize = 11,
 background_color_legend = :transparent,legend = :topright,fg_legend = :transparent, size = (400,300), ylabel = "probability density", xlabel = "log₁₀(burst frequency)")
 p = violin!(map_sets[2][:,1], linewidth = 5, linealpha = 0.5, color = col[2], label = false)
-savefig(p, "Julia/paper_figures/figure_4/burst_freq.svg")
+savefig(p, "data/paper_figures/figure_4/burst_freq.svg")
 
 
 
 p = density(map_sets[1][:,3] .- map_sets[1][:,2], linewidth = 5, color = col[1], label = false, title = "burst size of constant genes", legendfontsize = 11,
 background_color_legend = :transparent,legend = :topright,fg_legend = :transparent, size = (400,300), ylabel = "probability density", xlabel = "log₁₀(burst size)")
 p = density!(map_sets[2][:,3] .- map_sets[2][:,2], linewidth = 5, linealpha = 0.5, color = col[2], label = false)
-savefig(p, "Julia/paper_figures/figure_4/burst_size.svg")
+savefig(p, "data/paper_figures/figure_4/burst_size.svg")
 
 
 p = density(map_sets[1][:,4], linewidth = 5, color = col[1], label = "scaling genes", title = "decay rate of constant genes", legendfontsize = 11,
 background_color_legend = :transparent,legend = :topleft,fg_legend = :transparent, size = (400,300), ylabel = "probability density", xlabel = "log₁₀(decay rate)")
 p = density!(map_sets[2][:,4], linewidth = 5, linealpha = 0.5, color = col[2], label = "non-scaling genes")
 
-savefig(p, "Julia/paper_figures/figure_4/decay_rate.svg")
+savefig(p, "data/paper_figures/figure_4/decay_rate.svg")
 
 p = boxplot(10 .^map_sets[1][:,4], linewidth = 1, color = col[1], label = false, legendfontsize = 11,
 background_color_legend = :transparent,legend = :topright,fg_legend = :transparent, size = (400,300), xtickfontsize = 11,xticks = ([1,2],["scaling genes","non-scaling genes"]), ylabel = "decay rate")
 p = boxplot!(10 .^map_sets[2][:,4], linewidth = 1, color = col[2], label = false)
 
-savefig(p, "Julia/paper_figures/figure_4/decay_rate_1.svg")
+savefig(p, "data/paper_figures/figure_4/decay_rate_1.svg")
 
 p = boxplot(10 .^map_sets[1][:,4], linewidth = 1, color = col[1], label = false, legendfontsize = 11,ylabel = "decay rate",xticks = ([1,2],["scaling genes","non-scaling genes"]),
 background_color_legend = :transparent,legend = :topright,fg_legend = :transparent, size = (400,300), xtickfontsize = 11, outliers = false)
 p = boxplot!(10 .^map_sets[2][:,4], linewidth = 1,  color = col[2], label = false, outliers = false)
 
-savefig(p, "Julia/paper_figures/figure_4/decay_rate_2.svg")
+savefig(p, "data/paper_figures/figure_4/decay_rate_2.svg")
 
 p = boxplot(map_sets[1][:,1], linewidth = 1, color = col[1], label = false, title = "burst frequency of constant genes   ", legendfontsize = 11, background_color_legend = :transparent,
     legend = :topright,fg_legend = :transparent, size = (400,300), xticks = ([1,2],["scaling genes","non-scaling genes"]), ylabel = "log₁₀(burst frequency)", outliers = false)
 p = boxplot!(map_sets[2][:,1], linewidth = 1, linealpha = 0.5, color = col[2], label = false, outliers = false)
-savefig(p, "Julia/paper_figures/figure_4/burst_frequency.png")
+savefig(p, "data/paper_figures/figure_4/burst_frequency.png")
 
 p = boxplot(map_sets[1][:,3] .- map_sets[1][:,2], linewidth = 1, color = col[1], label = false, title = "burst size of constant genes", legendfontsize = 11, background_color_legend = :transparent,
 legend = :topright,fg_legend = :transparent, size = (400,300), xticks = ([1,2],["scaling genes","non-scaling genes"]), ylabel = "log₁₀(burst size)", outliers = false)
 p = boxplot!(map_sets[2][:,3] .- map_sets[2][:,2], linewidth = 1, linealpha = 0.5, color = col[2], label = false, outliers = false)
-savefig(p, "Julia/paper_figures/figure_4/burst_size.png")
+savefig(p, "data/paper_figures/figure_4/burst_size.png")
+
+
 
 ###############################################################################################
 ############################### mRNA half-life analysis #######################################
 ###############################################################################################
+
 vary_flags::Vector{Vector{Int64}} = [[0,0,0,0],[0,0,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]]
 vary_maps::Vector{Vector{Any}} = [get_vary_map(vary_flag,5) for vary_flag in vary_flags];
 
 cycle = 20.0
 dilution_rate = 0.0; # log(2) / cycle;
 
-half_life = [log(2) ./ ((10 .^m_s[:,vary_maps[i][4]]) .+ dilution_rate) for (i,m_s) in enumerate(map_sets[1:4])];
+half_life = [log(2) ./ (10 .^m_s[:,vary_maps[i][4]]) for (i,m_s) in enumerate(map_sets[1:4])];
 half_life = push!(half_life, log(2) ./ ((10 .^mean(map_sets[5][:,vary_maps[5][4]],dims=2)[:,1]) .+ dilution_rate))
 
 col = [:skyblue4, :lightcyan4]
 p = boxplot(half_life[1], linewidth = 1, color = col[1], label = false, legendfontsize = 11, ylims = (0.0,20.0),
 background_color_legend = :transparent,legend = :topright,fg_legend = :transparent, size = (400,300), xtickfontsize = 11,xticks = ([1,2],["scaling genes","non-scaling genes"]), ylabel = "mRNA half-life (h)", outliers = false)
 p = boxplot!(half_life[2], linewidth = 1, color = col[2], label = false, dpi = 300, outliers = false)
-savefig(p, "Julia/paper_figures/figure_4/half_life.svg")
-savefig(p, "Julia/paper_figures/figure_4/half_life.png")
+savefig(p, "data/paper_figures/figure_4/half_life.svg")
+savefig(p, "data/paper_figures/figure_4/half_life.png")
 
-savefig(p, "Julia/paper_figures/figure_4/half_life_no_deg.svg")
-savefig(p, "Julia/paper_figures/figure_4/half_life_deg.png")
+savefig(p, "data/paper_figures/figure_4/half_life_no_deg.svg")
+savefig(p, "data/paper_figures/figure_4/half_life_deg.png")
 
 
 col = [:skyblue4, :seagreen4, :gold]
@@ -572,8 +541,8 @@ background_color_legend = :transparent,legend = :topright,fg_legend = :transpare
 xticks = ([1,2,3],["burst frequency \ngenes","burst size \ngenes", "decay rate \ngenes"]), ylabel = "mRNA half-life (h)", dpi = 300, outliers = false)
 p = boxplot!(half_life[4], linewidth = 1, color = col[2], label = false, outliers = false)
 p = boxplot!(half_life[5], linewidth = 1, color = col[3], label = false, outliers = false)
-savefig(p, "Julia/paper_figures/figure_5/half_life.svg")
-savefig(p, "Julia/paper_figures/figure_5/half_life.png")
+savefig(p, "data/paper_figures/figure_5/half_life.svg")
+savefig(p, "data/paper_figures/figure_5/half_life.png")
 
 #compare with scSLAM-seq
 scslam = CSV.read("scSLAMseq_hf.csv",DataFrame)
@@ -597,8 +566,8 @@ p = scatter(hl_1, hl, size = (400,300), label = false,ylabel = "mRNA half-life (
 rho = StatsBase.corspearman(hl,hl_1)
 p = plot!([0:maximum(hl_1);],[0:maximum(hl_1);],label = false,linewidth = 4, linestyle = :dash, top_margin = 2mm, color = :darkorange2, linealpha=0.75, dpi = 300)
 p = annotate!(35,60,text("Spearman's ρ = $(round(rho,digits = 2))", 11, color = :darkorange2))
-savefig(p, "Julia/paper_figures/figure_4/half_life_scSLAM.svg")
-savefig(p, "Julia/paper_figures/figure_4/half_life_scSLAM.png")
+savefig(p, "data/paper_figures/figure_4/half_life_scSLAM.svg")
+savefig(p, "data/paper_figures/figure_4/half_life_scSLAM.png")
 
 
 gene_vec = vcat(sel_genes[3:5]...)
@@ -620,8 +589,8 @@ p = scatter(hl_1, hl, size = (400,300), label = false,ylabel = "mRNA half-life (
 rho = StatsBase.corspearman(hl,hl_1)
 p = plot!([0:maximum(hl_1);],[0:maximum(hl_1);],label = false,linewidth = 4, linestyle = :dash, top_margin = 2mm, color = :darkorange2, linealpha=0.75, dpi = 300)
 p = annotate!(7,25,text("Spearman's ρ = $(round(rho,digits = 2))", 11, color = :darkorange2))
-savefig(p, "Julia/paper_figures/figure_4/half_life_nc_scSLAM.svg")
-savefig(p, "Julia/paper_figures/figure_4/half_life_nc_scSLAM.png")
+savefig(p, "data/paper_figures/figure_4/half_life_nc_scSLAM.svg")
+savefig(p, "data/paper_figures/figure_4/half_life_nc_scSLAM.png")
 
 
 
@@ -651,8 +620,8 @@ p = plot!([0:maximum(hl_1);],[0:maximum(hl_1);],label = false,linewidth = 4, lin
 p = annotate!(88,40,text("Spearman's ρ = $(round(rho,digits = 2))", 11, color = :darkorange2))
 #p = annotate!(88,47,text("$(length(idx)) common genes", 11))
 
-savefig(p, "Julia/paper_figures/figure_4/half_life_scifate.svg")
-savefig(p, "Julia/paper_figures/figure_4/half_life_scifate.png")
+savefig(p, "data/paper_figures/figure_4/half_life_scifate.svg")
+savefig(p, "data/paper_figures/figure_4/half_life_scifate.png")
 
 gene_vec = vcat(sel_genes[3:5]...)
 idx = [];
@@ -675,118 +644,14 @@ p = plot!([0:maximum(hl_1);],[0:maximum(hl_1);],label = false,linewidth = 4, lin
 p = annotate!(15,23,text("Spearman's ρ = $(round(rho,digits = 2))", 11, color = :darkorange2))
 #p = annotate!(15,52,text("$(length(idx)) common genes", 11))
 
-savefig(p, "Julia/paper_figures/figure_4/half_life_nc_scifate.svg")
-savefig(p, "Julia/paper_figures/figure_4/half_life_nc_scifate.png")
-
-
-#compare with scNT-seq
-scnt = CSV.read("scNTseq_hf.csv",DataFrame)
-gene_vec = vcat(sel_genes[1:2]...)
-idx = [];
-idx_1 = [];
-for (i,g) in enumerate(uppercase.(gene_names[gene_vec]))
-    x = findall(x->x==g,uppercase.(scnt[:,1]))
-    if x != []
-        push!(idx,i)
-        push!(idx_1,x[1])
-    end
-end
-
-
-hl = vcat(half_life[1:2]...)[idx]
-hl_1 = scnt[idx_1,2]
-   
-p = scatter(hl_1, hl, size = (400,350), label = false,ylabel = "mRNA half-life (scEU-seq)",xlabel = "mRNA half-life (scNT-seq)",
-                 markeralpha = 0.6, color = :skyblue4)
-rho = StatsBase.corspearman(hl,hl_1)
-p = plot!([0:maximum(hl);],[0:maximum(hl);],label = false,linewidth = 4, linestyle = :dash, top_margin = 2mm, color = :darkorange2, linealpha=0.75, dpi = 300)
-savefig(p, "Julia/paper_figures/figure_4/half_life_scifate.svg")
-
-
-
-
-
-
-
+savefig(p, "data/paper_figures/figure_4/half_life_nc_scifate.svg")
+savefig(p, "data/paper_figures/figure_4/half_life_nc_scifate.png")
 
 
 
 ########################################################################################################################
 #####################################    Plot posterior model fits    ##################################################
 ########################################################################################################################
-model_names = ["const","const_const","kon","alpha","gamma"];
-
-n_sim_groups = 1
-s_pulse = Vector{Matrix{Float64}}(undef,length(model_names))
-s_chase = Vector{Matrix{Float64}}(undef,length(model_names))
-for m in 1:5 
-    s_pulse[m], s_chase[m] = load_s_data("Julia/large_scale_simulations/",m,n_sim_groups,[1,2])
-end
-
-s_ratios = Vector{Matrix{Float64}}(undef,length(model_names))
-s_mean_corr = Vector{Matrix{Float64}}(undef,length(model_names))
-s_corr_mean = Vector{Matrix{Float64}}(undef,length(model_names))
-for m in 1:5 
-    s_ratios[m], s_mean_corr[m], s_corr_mean[m] = load_s_data("Julia/large_scale_simulations/",m,n_sim_groups,[3,4,5])
-end
-
-ms_df = CSV.read("Julia/model_selection/model_selection_results.txt", DataFrame);
-ms = Int64.(Matrix(ms_df[:,[1,3]]));
-
-#map_sets = [get_posterior_estimate(sets[m],posterior[m],nc_genes[1][m-2],"map") for m in 3:5]
-#post_mean_sets = [get_posterior_estimate(sets[m],posterior[m],nc_genes[1][m-2],"mean") for m in 3:5]
-
-#pick model and gene
-m = 2
-model_name = model_names[m]
-
-g = 30              #const_scaling: 51, 102    #non_scaling:     #burst_freq: 44    #burst_size: 10  # decay rate:  58, 8
-g_name = String(ms_df.gene_name[ms_df.model .== m][g])
-
-
-n_particles_mat[ms[ms[:,2] .== m,1][g],m]
-#ms_df.gene_name[ms_df.model .== m]
-
-#get data
-p_mean = pulse_mean[ms[ms[:,2] .== m,1][g],:]
-p_ff = pulse_ff[ms[ms[:,2] .== m,1][g],:]
-
-c_mean = chase_mean[ms[ms[:,2] .== m,1][g],:]
-c_ff = chase_ff[ms[ms[:,2] .== m,1][g],:]
-
-p_mean_se = pulse_mean_se[ms[ms[:,2] .== m,1][g],:]
-p_ff_se = pulse_ff_se[ms[ms[:,2] .== m,1][g],:]
-c_mean_se = chase_mean_se[ms[ms[:,2] .== m,1][g],:]
-c_ff_se = chase_ff_se[ms[ms[:,2] .== m,1][g],:]
-
-
-#get posterior fits
-prop = 1.0;
-particles = posterior[m][ms[ms[:,2] .== m,1][g]][1:Int64(floor(n_particles_mat[ms[ms[:,2] .== m,1][g],m] * prop))]
-
-q = 1.0;
-
-s_p_mean = filter_quantiles(get_mean_subset(s_pulse[m])[particles,:],q)
-s_p_ff = filter_quantiles(get_ff_subset(s_pulse[m])[particles,:],q)
-s_c_mean = filter_quantiles(get_mean_subset(s_chase[m])[particles,:],q)
-s_c_ff = filter_quantiles(get_ff_subset(s_chase[m])[particles,:],q)
-
-
-p1, p2 = plot_fit(hcat(p_mean,p_ff),hcat(p_mean_se,p_ff_se),s_p_mean,s_p_ff,g_name,m);
-p1
-p2
-
-p1, p2 = plot_fit(hcat(c_mean,c_ff),hcat(c_mean_se,c_ff_se),s_c_mean,s_c_ff,g_name,m);
-p1
-p2
-
-savefig(p1,"Julia/model_fits/"*model_name*"/"*lowercase(g_name)*"_mean_fit.svg")
-savefig(p2,"Julia/model_fits/"*model_name*"/"*lowercase(g_name)*"_ff_fit.svg")
-
-savefig(p1,"Julia/model_fits/"*model_name*"/"*lowercase(g_name)*"_mean_fit.png")
-savefig(p2,"Julia/model_fits/"*model_name*"/"*lowercase(g_name)*"_ff_fit.png")
-
-
 function plot_fit(data::Matrix{Float64}, data_se::Matrix{Float64}, s_mean::Matrix{Float64}, s_ff::Matrix{Float64}, gene_name::String, m::Int64)
     data_col = :mediumpurple4
     col = [:skyblue4, :lightcyan4, :skyblue4, :seagreen4, :gold][m]
@@ -886,33 +751,6 @@ function plot_fit(data::Matrix{Float64}, data_se::Matrix{Float64}, s_mean::Matri
     return mean_plot,ff_plot
 end
 
-# other summary statistics=
-r_data = ratio_data[ms[ms[:,2] .== m,1][g],:]
-r_se = ratio_se[ms[ms[:,2] .== m,1][g],:]
-
-m_c_data = mean_corr_data[ms[ms[:,2] .== m,1][g],:]
-m_c_se = mean_corr_se[ms[ms[:,2] .== m,1][g],:]
-
-c_m_data = corr_mean_data[ms[ms[:,2] .== m,1][g],:]
-c_m_se = corr_mean_se[ms[ms[:,2] .== m,1][g],:]
-
-q = 1.0;
-
-s_r = filter_quantiles(s_ratios[m][particles,:],q)
-s_m_c = filter_quantiles(s_mean_corr[m][particles,:],q)
-s_c_m = filter_quantiles(s_corr_mean[m][particles,:],q)
-
-p1 = plot_id_specific_fits(r_data,r_se,s_r,g_name, m, 1)
-
-p2 = plot_id_specific_fits(m_c_data,m_c_se,s_m_c,g_name, m, 2)
-
-p3 = plot_id_specific_fits(c_m_data,c_m_se,s_c_m,g_name,m, 3)
-
-savefig(p1,"Julia/model_fits/"*model_name*"/"*lowercase(g_name)*"_ratio_fit.svg")
-savefig(p2,"Julia/model_fits/"*model_name*"/"*lowercase(g_name)*"_mean_corr_fit.svg")
-savefig(p3,"Julia/model_fits/"*model_name*"/"*lowercase(g_name)*"_corr_mean_fit.svg")
-
-
 function plot_id_specific_fits(data::Vector{Float64},se::Vector{Float64}, s_data::Matrix{Float64}, gene_name::String, m::Int64, which_data::Int64)
     data_label = ["mean labelled vs total ratio", "mean correlation", "correlation of means"][which_data]
     col = [:skyblue4, :lightcyan4, :skyblue4, :seagreen4, :gold][m]
@@ -939,350 +777,102 @@ function plot_id_specific_fits(data::Vector{Float64},se::Vector{Float64}, s_data
     return p
 end
 
+model_names = ["const","const_const","kon","alpha","gamma"];
 
-# predicted expression levels for certain genes
-downsampling = false
-vary_flag = [[0,0,0,0],[0,0,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]][m]
-vary_map = get_vary_map(vary_flag,5)
-scaling = 1 * (!=(m,2))
-
-s_mean_pred = Matrix{Float64}(undef,(length(particles),5));
-s_ff_pred = Matrix{Float64}(undef,(length(particles),5));
-θ = sets[m][particles,:]
-@time for i in 1:length(particles)
-    s_ = run_part_sim(θ[i,:],iv,agevec,cycle,pulsevec,chasevec,t0,vary_map,scaling,n_steps,downsampling,betas,age)
-    s_mean_pred[i,:] = s_[:,1]
-    s_ff_pred[i,:] = s_[:,2]
+n_sim_groups = 1
+s_pulse = Vector{Matrix{Float64}}(undef,length(model_names))
+s_chase = Vector{Matrix{Float64}}(undef,length(model_names))
+for m in 1:5 
+    s_pulse[m], s_chase[m] = load_s_data("data/large_scale_simulations/",m,n_sim_groups,[1,2])
 end
 
-q = 1.0
-s_mean_pred = filter_quantiles(s_mean_pred,q)
-s_ff_pred = filter_quantiles(s_ff_pred,q)
+s_ratios = Vector{Matrix{Float64}}(undef,length(model_names))
+s_mean_corr = Vector{Matrix{Float64}}(undef,length(model_names))
+s_corr_mean = Vector{Matrix{Float64}}(undef,length(model_names))
+for m in 1:5 
+    s_ratios[m], s_mean_corr[m], s_corr_mean[m] = load_s_data("data/large_scale_simulations/",m,n_sim_groups,[3,4,5])
+end
+
+ms_df = CSV.read("data/model_selection/model_selection_results.txt", DataFrame);
+ms = Int64.(Matrix(ms_df[:,[1,3]]));
+
+#map_sets = [get_posterior_estimate(sets[m],posterior[m],nc_genes[1][m-2],"map") for m in 3:5]
+#post_mean_sets = [get_posterior_estimate(sets[m],posterior[m],nc_genes[1][m-2],"mean") for m in 3:5]
+
+#pick model and gene
+m = 2
+model_name = model_names[m]
+
+g = 30              #const_scaling: 51, 102    #non_scaling:     #burst_freq: 44    #burst_size: 10  # decay rate:  58, 8
+g_name = String(ms_df.gene_name[ms_df.model .== m][g])
 
 
-p1, p2 = plot_pred_2(hcat(p_mean,p_ff),hcat(p_mean_se,p_ff_se),s_mean_pred,s_ff_pred,g_name,m);
-p1
-#p2
+n_particles_mat[ms[ms[:,2] .== m,1][g],m]
+#ms_df.gene_name[ms_df.model .== m]
 
-p1, p2 = plot_pred_2(hcat(c_mean,c_ff),hcat(c_mean_se,c_ff_se),s_mean_pred,s_ff_pred,g_name,m);
-p1
-#p2
+#get data
+p_mean = pulse_mean[ms[ms[:,2] .== m,1][g],:]
+p_ff = pulse_ff[ms[ms[:,2] .== m,1][g],:]
 
-#=
-p1, p2 = plot_pred(s_mean_pred,s_ff_pred,g_name,m);
+c_mean = chase_mean[ms[ms[:,2] .== m,1][g],:]
+c_ff = chase_ff[ms[ms[:,2] .== m,1][g],:]
+
+p_mean_se = pulse_mean_se[ms[ms[:,2] .== m,1][g],:]
+p_ff_se = pulse_ff_se[ms[ms[:,2] .== m,1][g],:]
+c_mean_se = chase_mean_se[ms[ms[:,2] .== m,1][g],:]
+c_ff_se = chase_ff_se[ms[ms[:,2] .== m,1][g],:]
+
+
+#get posterior fits
+prop = 1.0;
+particles = posterior[m][ms[ms[:,2] .== m,1][g]][1:Int64(floor(n_particles_mat[ms[ms[:,2] .== m,1][g],m] * prop))]
+
+q = 1.0;
+
+s_p_mean = filter_quantiles(get_mean_subset(s_pulse[m])[particles,:],q)
+s_p_ff = filter_quantiles(get_ff_subset(s_pulse[m])[particles,:],q)
+s_c_mean = filter_quantiles(get_mean_subset(s_chase[m])[particles,:],q)
+s_c_ff = filter_quantiles(get_ff_subset(s_chase[m])[particles,:],q)
+
+
+p1, p2 = plot_fit(hcat(p_mean,p_ff),hcat(p_mean_se,p_ff_se),s_p_mean,s_p_ff,g_name,m);
 p1
 p2
-=#
-savefig(p1,"Julia/model_fits/"*model_name*"/"*lowercase(g_name)*"_mean_pred.svg")
-#savefig(p2,"Julia/model_fits/"*model_name*"/"*lowercase(g_name)*"_ff_pred.svg")
+
+p1, p2 = plot_fit(hcat(c_mean,c_ff),hcat(c_mean_se,c_ff_se),s_c_mean,s_c_ff,g_name,m);
+p1
+p2
+
+savefig(p1,"data/model_fits/"*model_name*"/"*lowercase(g_name)*"_mean_fit.svg")
+savefig(p2,"data/model_fits/"*model_name*"/"*lowercase(g_name)*"_ff_fit.svg")
 
 
+# other summary statistics=
+r_data = ratio_data[ms[ms[:,2] .== m,1][g],:]
+r_se = ratio_se[ms[ms[:,2] .== m,1][g],:]
 
+m_c_data = mean_corr_data[ms[ms[:,2] .== m,1][g],:]
+m_c_se = mean_corr_se[ms[ms[:,2] .== m,1][g],:]
 
-function plot_pred(s_mean::Matrix{Float64}, s_ff::Matrix{Float64}, gene_name::String, m::Int64)
-    col = [:royalblue4, :royalblue4, :steelblue4, :seagreen4, :gold][m]
-    model_label = ["constant rates (scaling)", "constant rates (non-scaling)", 
-                "varying burst frequency", "varying burst size", "varying decay rate"][m]
-    agevec = [0.1:0.2:0.9;]
-    s_mean_min = minimum(s_mean,dims=1)[1,:]
-    s_mean_mean = mean(s_mean,dims=1)[1,:]
-    s_mean_max = maximum(s_mean,dims=1)[1,:]
-    s_ff_min = minimum(s_ff,dims=1)[1,:]
-    s_ff_mean = mean(s_ff,dims=1)[1,:]
-    s_ff_max = maximum(s_ff,dims=1)[1,:]
-    local mean_plot::Plots.Plot{Plots.GRBackend}
-    local ff_plot::Plots.Plot{Plots.GRBackend}
-    mean_plot = plot(agevec,
-            hcat(s_mean_min,s_mean_max),
-            fillrange = s_mean_mean,
-            fillalpha = 0.25,
-            fillcolor = [col col],
-            linecolor = [col col],
-            title = gene_name,
-            xlabel = "cell cycle progression",
-            ylabel = "mean transcript levels",
-            labels = [nothing nothing],
-            shape = [:none :none],
-            linewidth = 0.1)
-    mean_plot = plot!(agevec,
-            s_mean_mean,
-            linecolor = col,
-            label = nothing,
-            legend = :topleft,
-            legendfontsize = 10,
-            fg_legend = :transparent,
-            linewidth = 4.0,
-            linestyle = :dash,
-            size = (400,300),
-            background_color_legend = nothing)
-    ff_plot = plot(agevec,
-            hcat(s_ff_min,s_ff_max),
-            fillrange = s_ff_mean,
-            fillalpha = 0.25,
-            fillcolor = [col col],
-            linecolor = [col col],
-            title = gene_name,
-            xlabel = "cell cycle progression",
-            ylabel = "Fano factor of transcript levels",
-            labels = [nothing nothing],
-            shape = [:none :none],
-            linewidth = 0.1)
-    ff_plot = plot!(agevec,
-            s_ff_mean,
-            linecolor = col,
-            label = model_label*" model prediction",
-            legend = :topleft,
-            legendfontsize = 10,
-            linestyle = :dash,
-            fg_legend = :transparent,
-            linewidth = 5.0,
-            size = (500,300),
-            background_color_legend = nothing)   
-    return mean_plot,ff_plot
-end
+c_m_data = corr_mean_data[ms[ms[:,2] .== m,1][g],:]
+c_m_se = corr_mean_se[ms[ms[:,2] .== m,1][g],:]
 
-function plot_pred_2(data::Matrix{Float64}, data_se::Matrix{Float64}, s_mean::Matrix{Float64}, s_ff::Matrix{Float64}, gene_name::String, m::Int64)
-    data_col = :mediumpurple4
-    col = [:skyblue4, :lightcyan4, :steelblue4, :seagreen4, :gold][m]
-    model_label = ["constant rates (scaling)", "constant rates (non-scaling)", 
-                "varying burst frequency", "varying burst size", "varying decay rate"][m]
-    agevec = [0.1:0.2:0.9;]
-    s_mean_min = minimum(s_mean,dims=1)[1,:]
-    s_mean_mean = mean(s_mean,dims=1)[1,:]
-    s_mean_max = maximum(s_mean,dims=1)[1,:]
-    s_ff_min = minimum(s_ff,dims=1)[1,:]
-    s_ff_mean = mean(s_ff,dims=1)[1,:]
-    s_ff_max = maximum(s_ff,dims=1)[1,:]
-    lims = [(0.0,maximum(vcat(data[:,1] + data_se[:,1], s_mean_max)) + 5.0), (0.0,10.0)];
-    local mean_plot::Plots.Plot{Plots.GRBackend}
-    local ff_plot::Plots.Plot{Plots.GRBackend}
-    mean_plot = plot(agevec,
-        hcat(data[:,1] - data_se[:,1],data[:,1] + data_se[:,1]),
-        fillrange = data[:,1],
-        fillalpha = 0.25,
-        fillcolor = [data_col data_col],
-        linealpha = [0.25 0.25],
-        linecolor = [data_col data_col],
-        labels = [nothing nothing],
-        shape = [:none :none])
-    mean_plot = plot!(agevec,
-            data[:,1],
-            label = "data",
-            shape = :circle,
-            legend = :topleft,
-            legendfontsize = 10,
-            fg_legend = :transparent,
-            linecolor = data_col,
-            linewidth = 5.0,
-            markercolor = data_col)
-    mean_plot = plot!(agevec,
-            hcat(s_mean_min,s_mean_max),
-            fillrange = s_mean_mean,
-            fillalpha = 0.25,
-            fillcolor = [col col],
-            linecolor = [col col],
-            title = gene_name,
-            xlabel = "cell cycle progression",
-            ylabel = "mean transcript levels",
-            labels = [nothing nothing],
-            shape = [:none :none],
-            linewidth = 0.1)
-    mean_plot = plot!(agevec,
-            s_mean_mean,
-            linecolor = col,
-            label = "model-based recovered levels",
-            legend = :topleft,
-            linestyle = :dash,
-            legendfontsize = 11,
-            fg_legend = :transparent,
-            linewidth = 5.0,
-            size = (400,300),
-            background_color_legend = nothing)
-    ff_plot = plot(agevec,
-        hcat(data[:,2] - data_se[:,2],data[:,2] + data_se[:,2]),
-        fillrange = data[:,2],
-        fillalpha = 0.25,
-        fillcolor = [data_col data_col],
-        linealpha = [0.25 0.25],
-        linecolor = [data_col data_col],
-        labels = [nothing nothing],
-        shape = [:none :none])
-    ff_plot = plot!(agevec,
-            data[:,2],
-            label = "data",
-            shape = :circle,
-            legend = :topleft,
-            legendfontsize = 10,
-            fg_legend = :transparent,
-            linecolor = data_col,
-            linewidth = 5.0,
-            markercolor = data_col)
-    ff_plot = plot!(agevec,
-            hcat(s_ff_min,s_ff_max),
-            fillrange = s_ff_mean,
-            fillalpha = 0.25,
-            fillcolor = [col col],
-            linecolor = [col col],
-            title = gene_name,
-            xlabel = "cell cycle progression",
-            ylabel = "Fano factor of transcript levels",
-            labels = [nothing nothing],
-            shape = [:none :none],
-            linewidth = 0.1)
-    ff_plot = plot!(agevec,
-            s_ff_mean,
-            linecolor = col,
-            label = "model-based recovered levels",
-            legend = :topleft,
-            ylims = lims[2],
-            legendfontsize = 11,
-            linestyle = :dash,
-            fg_legend = :transparent,
-            linewidth = 5.0,
-            size = (400,300),
-            background_color_legend = nothing)   
-    return mean_plot,ff_plot
-end
+q = 1.0;
 
-function plot_fit_pred(data::Matrix{Float64}, data_se::Matrix{Float64}, s_mean::Matrix{Float64}, s_ff::Matrix{Float64},
-    s_mean_pred::Matrix{Float64}, s_ff_pred::Matrix{Float64}, gene_name::String, m::Int64)
-    data_col = :mediumpurple4
-    col = [:royalblue4, :royalblue4, :steelblue4, :seagreen4, :gold][m]
-    model_label = ["constant rates (scaling)", "constant rates (non-scaling)", 
-                "varying burst frequency", "varying burst size", "varying decay rate"][m]
-    agevec = [0.1:0.2:0.9;]
-    s_mean_min = minimum(s_mean,dims=1)[1,:]
-    s_mean_mean = mean(s_mean,dims=1)[1,:]
-    s_mean_max = maximum(s_mean,dims=1)[1,:]
-    s_ff_min = minimum(s_ff,dims=1)[1,:]
-    s_ff_mean = mean(s_ff,dims=1)[1,:]
-    s_ff_max = maximum(s_ff,dims=1)[1,:]
-    s_mean_pred_mean = mean(s_mean_pred,dims=1)[1,:]
-    s_ff_pred_mean = mean(s_ff_pred,dims=1)[1,:]
-    local mean_plot::Plots.Plot{Plots.GRBackend}
-    local ff_plot::Plots.Plot{Plots.GRBackend}
-    mean_plot = plot(agevec,
-        hcat(data[:,1] - data_se[:,1],data[:,1] + data_se[:,1]),
-        fillrange = data[:,1],
-        fillalpha = 0.25,
-        fillcolor = [data_col data_col],
-        linealpha = [0.25 0.25],
-        linecolor = [data_col data_col],
-        labels = [nothing nothing],
-        shape = [:none :none])
-    mean_plot = plot!(agevec,
-            data[:,1],
-            title = gene_name,
-            xlabel = "cell cycle progression",
-            ylabel = "mean transcript levels",
-            label = "data",
-            shape = :circle,
-            legend = :topleft,
-            legendfontsize = 10,
-            fg_legend = :transparent,
-            linecolor = data_col,
-            linewidth = 5.0,
-            markercolor = data_col)
-    mean_plot = plot!(agevec,
-            hcat(s_mean_min,s_mean_max),
-            fillrange = s_mean_mean,
-            fillalpha = 0.25,
-            fillcolor = [col col],
-            linecolor = [col col],
-            labels = [model_label*" model" nothing],
-            shape = [:none :none],
-            linewidth = 0.1)
-    mean_plot = plot!(agevec,
-            s_mean_mean,
-            linecolor = col,
-            label = nothing,
-            linewidth = 5.0)
-    mean_plot = plot!(agevec,
-            s_mean_pred_mean,
-            linecolor = col,
-            linestyle = :dash,
-            label = "model prediction",
-            linewidth = 5.0,
-            size = (500,300),
-            background_color_legend = nothing)
-    ff_plot = plot(agevec,
-        hcat(data[:,2] - data_se[:,2],data[:,2] + data_se[:,2]),
-        fillrange = data[:,2],
-        fillalpha = 0.25,
-        fillcolor = [data_col data_col],
-        linealpha = [0.25 0.25],
-        linecolor = [data_col data_col],
-        labels = [nothing nothing],
-        shape = [:none :none])
-    ff_plot = plot!(agevec,
-            data[:,2],
-            title = gene_name,
-            xlabel = "cell cycle progression",
-            ylabel = "Fano factor of transcript levels",
-            label = "data",
-            shape = :circle,
-            legend = :topleft,
-            legendfontsize = 10,
-            fg_legend = :transparent,
-            linecolor = data_col,
-            linewidth = 5.0,
-            markercolor = data_col)
-    ff_plot = plot!(agevec,
-            hcat(s_ff_min,s_ff_max),
-            fillrange = s_ff_mean,
-            fillalpha = 0.25,
-            fillcolor = [col col],
-            linecolor = [col col],
-            labels = [model_label*" model" nothing],
-            shape = [:none :none],
-            linewidth = 0.1)
-    ff_plot = plot!(agevec,
-            s_ff_mean,
-            linecolor = col,
-            label = nothing,
-            linewidth = 5.0,
-            size = (500,300),
-            background_color_legend = nothing) 
-    ff_plot = plot!(agevec,
-            s_ff_pred_mean,
-            linecolor = col,
-            linestyle = :dash,
-            label = "model prediction",
-            linewidth = 5.0,
-            size = (500,300),
-            background_color_legend = nothing)  
-    return mean_plot,ff_plot
-end
+s_r = filter_quantiles(s_ratios[m][particles,:],q)
+s_m_c = filter_quantiles(s_mean_corr[m][particles,:],q)
+s_c_m = filter_quantiles(s_corr_mean[m][particles,:],q)
 
+p1 = plot_id_specific_fits(r_data,r_se,s_r,g_name, m, 1)
 
+p2 = plot_id_specific_fits(m_c_data,m_c_se,s_m_c,g_name, m, 2)
 
+p3 = plot_id_specific_fits(c_m_data,c_m_se,s_c_m,g_name,m, 3)
 
-#=
-function plot_ratio_fit(r_data::Vector{Float64},r_se::Vector{Float64}, s_r::Vector{Float64}, gene_name::String, m::Int64)
-    condition_id = hcat([1/4,1/2,3/4,1,2,3,22,22,22,22,22], [0,0,0,0,0,0,0,1,2,4,6])
-    x_ticks = vcat(condition_id[1:6,1], condition_id[7:end,1] .+ condition_id[7:end,2] .- 17)
-    x_tick_labels = vcat(["$j" for j in condition_id[1:3,1]], ["$(round(Int64,j))" for j in condition_id[4:6,1]], ["$(round(Int64,i))"* " + " *"$(round(Int64,j))" for i in condition_id[7:end,1] for j in condition_id[7:end,2]])
-    colours = cgrad(:viridis,100,categorical=true)[[30,70,90,100]]
-    data_colour = cgrad(:acton,10,categorical=true)[[1]]
-    p = plot(x_ticks, hcat(r_data .+ r_se, r_data .- r_se), label = false,
-                fillrange = r_data, fillalpha = 0.15, xtickfontsize = 7, xrotation=45, linealpha = [0.15 0.15],
-                xticks = (x_ticks, x_tick_labels), legend = :topleft, fg_legend = :transparent,
-                fillcolor = [data_colour[1] data_colour[1]], linecolor = [data_colour[1] data_colour[1]], labels = [nothing nothing], shape = [:none :none])
-            p = plot!(x_ticks, r_data, xlabel = "labelling time", ylabel = "mean(L) / (mean(U) + mean(L))", title = gene_name,
-            ylim = (-0.05,0.8), linewidth = 5, label = "data", shape = :circle, legendfont = font(10),
-            linecolor = data_colour[1], markercolor = data_colour[1], margin = 5Plots.mm)
-            p = plot!(x_ticks, hcat(last.(s_r_bounds), first.(s_r_bounds)), label = false,
-                fillrange = s_r, fillalpha = 0.15, xtickfontsize = 7, xrotation=70, linealpha = [0.15 0.15],
-                xticks = (x_ticks, x_tick_labels),
-                fillcolor = [colours[m] colours[m]], linecolor = [colours[m] colours[m]], labels = [nothing nothing], shape = [:none :none])
-            p = plot!(x_ticks, s_r,
-                ylim = (-0.05,0.8), linewidth = 4, label = rate_label,
-                linecolor = colours[m], markercolor = colours[m])
-            p = vspan!([0,3], color = [:skyblue], alpha = 0.12, label = "pulse")
-            p = vspan!([5,11], color = [:royalblue4], alpha = 0.12, label = "chase")
-    return p
-end
-=#
+savefig(p1,"data/model_fits/"*model_name*"/"*lowercase(g_name)*"_ratio_fit.svg")
+savefig(p2,"data/model_fits/"*model_name*"/"*lowercase(g_name)*"_mean_corr_fit.svg")
+savefig(p3,"data/model_fits/"*model_name*"/"*lowercase(g_name)*"_corr_mean_fit.svg")
+
 
 
 #plot posterior kinetic rates
@@ -1298,36 +888,14 @@ q = 0.75;          #constant genes: q = 0.75 # burst size gene: 0.7
 p = plot_posterior_rate(filter_quantiles(θ,q),vary_flag,n_steps,scaling,cycle,g_name,m);
 p
 
-savefig(p,"Julia/model_fits/"*model_name*"/"*lowercase(g_name)*"_rate.pdf")
-savefig(p,"Julia/model_fits/"*model_name*"/"*lowercase(g_name)*"_rate.svg")
+savefig(p,"data/model_fits/"*model_name*"/"*lowercase(g_name)*"_rate.svg")
 
 
-#q = 1.0
-#p = plot_rates(filter_quantiles(θ,q),vary_flag,n_steps,scaling,cycle,g_name,m);
-#p
 
 p = plot_rates(θ,vary_flag,n_steps,scaling,cycle,g_name,m);
 p
 
-
-savefig(p,"Julia/model_fits/"*model_name*"/"*lowercase(g_name)*"_all_rates.svg")
-
-
-#p = plot_posterior_rate_2(filter_quantiles(θ,q),vary_flag,n_steps,scaling,cycle,g_name,m);
-#p
-
-#y, p = plot_map_rate(θ[1,:],vary_flag,n_steps,scaling,cycle,m);
-#p
-
-#=
-p_log = plot_log_rate(θ,vary_flag,n_steps,scaling,cycle,g_name,m);
-p_log
-
-p,p_log = plot_mean_rate(θ,vary_flag,n_steps,scaling,cycle,m);
-p
-p_log
-=#
-
+savefig(p,"data/model_fits/"*model_name*"/"*lowercase(g_name)*"_all_rates.svg")
 
 
 
@@ -1377,187 +945,6 @@ function plot_posterior_rate(θ::AbstractArray{Float64}, vary_flag::Vector{Int64
     return p
 end
 
-function plot_posterior_rate_2(θ::AbstractArray{Float64}, vary_flag::Vector{Int64}, n_steps::Int64, scaling::Int64, cycle::Float64, gene_name::String, m::Int64)
-    col = [:skyblue4, :lightcyan3, :skyblue4, :seagreen4, :gold][m]
-    rate_label = ["synthesis rate", "synthesis rate", 
-                "burst frequency", "burst size", "decay rate"][m]          
-    tspan::Vector{Float64} = [0.0:0.1:cycle-0.1;]
-    t_steps::Vector{Float64} = [0.0:cycle/n_steps:cycle;]
-    vary_map = get_vary_map(vary_flag,n_steps)
-    if m >= 3
-        vary_idx::Vector{Int64} = findall(x->x>0,vary_flag)
-    else
-        vary_idx = [3]
-    end
-    local denom::Vector{Float64}
-    local p::Plots.Plot{Plots.GRBackend}
-    y = Matrix{Float64}(undef,(length(vary_flag),length(tspan)))
-    for (k,t) in enumerate(tspan)
-        y[:,k] = 10 .^(get_rate(θ[1,1:end-1], vary_map, scaling, t_steps, cycle, t))
-    end
-    if vary_idx == 3
-        denom = y[2,:]
-    else
-        denom = ones(length(tspan))
-    end
-    p = plot(tspan ./ cycle, y[vary_idx[1],:] ./ denom,
-                    linewidth = 5.0,
-                    xlabel = "cell cycle progression",
-                    ylabel = rate_label,
-                    label = false,
-                    title = gene_name,
-                    ylims = (0.0,2 * maximum(10 .^θ[:,vary_idx[1]]) + 5),
-                    size = (400, 300),
-                    left_margin = 4Plots.mm,
-                    bottom_margin = 5Plots.mm,
-                    linecolor = col)
-    for i in 2:size(θ)[1]
-        y = Matrix{Float64}(undef,(length(vary_flag),length(tspan)))
-        for (k,t) in enumerate(tspan)
-            y[:,k] = 10 .^(get_rate(θ[i,1:end-1], vary_map, scaling, t_steps, cycle, t))
-        end
-        if vary_idx == 3
-            denom = y[vary_map[2],:]
-        else
-            denom = ones(length(tspan))
-        end
-        p = plot!(tspan ./ cycle, y[vary_idx[1],:] ./ denom,linewidth = 0.1, label = false, linecolor = col)
-    end
-    return p
-end
-
-function plot_map_rate(θ::Vector{Float64}, vary_flag::Vector{Int64}, n_steps::Int64, scaling::Int64, cycle::Float64, m::Int64)
-    col = [:royalblue4, :royalblue4, :steelblue, :seagreen4, :gold][m]
-    rate_label = ["constant rates (scaling)", "constant rates (non-scaling)", 
-                "burst frequency", "burst size", "decay rate"][m]          
-    tspan::Vector{Float64} = [0.0:0.1:cycle-0.1;]
-    t_steps::Vector{Float64} = [0.0:cycle/n_steps:cycle;]
-    vary_map = get_vary_map(vary_flag,n_steps)
-    if m >= 3
-        vary_idx::Vector{Int64} = findall(x->x>0,vary_flag)
-    else
-        vary_idx = [3]
-    end
-    local denom::Vector{Float64}
-    local p::Plots.Plot{Plots.GRBackend}
-    y = Matrix{Float64}(undef,(length(vary_flag),length(tspan)))
-    for (k,t) in enumerate(tspan)
-        y[:,k] = 10 .^(get_rate(θ[1:end-1], vary_map, scaling, t_steps, cycle, t))
-    end
-    if vary_idx == 3
-        denom = y[2,:]
-    else
-        denom = ones(length(tspan))
-    end
-    p = plot(tspan ./ cycle, y[vary_idx[1],:] ./ denom,
-                    linewidth = 5.0,
-                    xlabel = "cell cycle progression",
-                    ylabel = rate_label,
-                    label = false,
-                    size = (700, 200),
-                    left_margin = 4Plots.mm,
-                    bottom_margin = 5Plots.mm,
-                    linecolor = col,
-                    legend = :topleft,
-                    legendfontsize = 12,
-                    fg_legend = :transparent)
-    return y, p 
-end
-
-function plot_log_rate(θ::Matrix{Float64}, vary_flag::Vector{Int64}, n_steps::Int64, scaling::Int64, cycle::Float64, gene_name::String,m::Int64)
-    col = [:royalblue4, :royalblue4, :steelblue, :seagreen4, :gold][m]
-    rate_label = ["constant rates (scaling)", "constant rates (non-scaling)", 
-                "burst frequency", "burst size", "decay rate"][m]
-    tspan::Vector{Float64} = [0.0:0.1:cycle-0.1;]
-    t_steps::Vector{Float64} = [0.0:cycle/n_steps:cycle;]
-    vary_map = get_vary_map(vary_flag,n_steps)
-    vary_idx = findall(x->x>0,vary_flag)
-    local denom::Vector{Float64}
-    local p::Plots.Plot{Plots.GRBackend}
-    y = Matrix{Float64}(undef,(length(vary_flag),length(tspan)))
-    for (k,t) in enumerate(tspan)
-        y[:,k] = 10 .^(get_rate(θ[1,1:end-1], vary_map, scaling, t_steps, cycle, t))
-    end
-    if vary_idx == 3
-        denom = y[vary_map[2],:]
-    else
-        denom = ones(length(tspan))
-    end
-    p = plot(tspan ./ cycle, log.(10,y[vary_idx[1],:] ./ denom),
-                    linewidth = 5.0,
-                    title = gene_name,
-                    xlabel = "cell cycle progression",
-                    ylabel = "log ("*rate_label*")",
-                    label = false,
-                    size = (500, 300),
-                    left_margin = 4Plots.mm,
-                    bottom_margin = 5Plots.mm,
-                    linecolor = col,
-                    legend = :topleft,
-                    legendfontsize = 12,
-                    fg_legend = :transparent)
-    for i in 2:size(θ)[1]
-        y = Matrix{Float64}(undef,(length(vary_flag),length(tspan)))
-        for (k,t) in enumerate(tspan)
-            y[:,k] = 10 .^(get_rate(θ[i,1:end-1], vary_map, scaling, t_steps, cycle, t))
-        end
-        if vary_idx == 3
-            denom = y[vary_map[2],:]
-        else
-            denom = ones(length(tspan))
-        end
-        p = plot!(tspan ./ cycle, log.(10,y[vary_idx[1],:] ./ denom), linewidth = 0.8, label = false, linecolor = col)
-    end
-    return p
-end
-
-function plot_mean_rate(θ::Matrix{Float64}, vary_flag::Vector{Int64}, n_steps::Int64, scaling::Int64, cycle::Float64, m::Int64)
-    u::Vector{Float64} = mean(θ,dims=1)[1,:]
-    col = [:royalblue4, :royalblue4, :steelblue, :seagreen4, :darkgoldenrod1][m]
-    rate_label = ["constant rates (scaling)", "constant rates (non-scaling)", 
-                "burst frequency", "burst size", "decay rate"][m]
-    tspan::Vector{Float64} = [0.0:0.1:cycle-0.1;]
-    t_steps::Vector{Float64} = [0.0:cycle/n_steps:cycle;]
-    vary_map = get_vary_map(vary_flag,n_steps)
-    vary_idx = findall(x->x>0,vary_flag)
-    local denom::Vector{Float64}
-    local p::Plots.Plot{Plots.GRBackend}
-    y = Matrix{Float64}(undef,(length(vary_flag),length(tspan)))
-    for (k,t) in enumerate(tspan)
-        y[:,k] = 10 .^(get_rate(u, vary_map, scaling, t_steps, cycle, t))
-    end
-    if vary_idx == 3
-        denom = y[vary_map[2],:]
-    else
-        denom = ones(length(tspan))
-    end
-    p = plot(tspan ./ cycle, y[vary_idx[1],:] ./ denom,
-                    linewidth = 5.0,
-                    xlabel = "cell cycle progression",
-                    ylabel = rate_label,
-                    label = false,
-                    size = (700, 200),
-                    left_margin = 4Plots.mm,
-                    bottom_margin = 5Plots.mm,
-                    linecolor = col,
-                    legend = :topleft,
-                    legendfontsize = 12,
-                    fg_legend = :transparent)
-    p_log = plot(tspan ./ cycle, log.(10,y[vary_idx[1],:] ./ denom),
-                    linewidth = 5.0,
-                    xlabel = "cell cycle progression",
-                    ylabel = "log("*rate_label*")",
-                    label = false,
-                    size = (700, 200),
-                    left_margin = 4Plots.mm,
-                    bottom_margin = 5Plots.mm,
-                    linecolor = col,
-                    legend = :topleft,
-                    legendfontsize = 12,
-                    fg_legend = :transparent)
-    return p,p_log
-end
-
 function plot_rates(θ::AbstractArray{Float64}, vary_flag::Vector{Int64}, n_steps::Int64, scaling::Int64, cycle::Float64, gene_name::String, m::Int64)
     u = median(θ[:,1:end-1],dims=1)[1,:]
     col = reshape([:skyblue4, :seagreen4, :gold],1,:)         
@@ -1588,7 +975,10 @@ function plot_rates(θ::AbstractArray{Float64}, vary_flag::Vector{Int64}, n_step
     return p
 end
 
-################################# Posterior distributions of single genes #######################################
+
+################################# Posterior distribution of a single gene #######################################
+
+
 function plot_const_posterior(θ::Matrix{Float64},err::Vector{Float64},m::Int64)
     rate_names::Vector{String} = ["burst frequency","synthesis rate","burst size","decay rate"]
     lims = [(-3,3),(-3,3),(-6,6),(-3,2)]
@@ -1634,7 +1024,7 @@ end
 m = 5
 model_name = model_names[m]
 
-g = 16     #lambdas -> 102, 77, 44   #const_scaling: 51, 102    #non_scaling: 146, 316, 80, 77   #burst_freq: 44    #burst_size: 10  # decay rate:  58, 8
+g = 16        #const_scaling: 51, 102    #non_scaling: 146, 316, 80, 77   #burst_freq: 44    #burst_size: 10  # decay rate:  58, 8
 g_name = String(ms_df.gene_name[ms_df.model .== m][g])
 
 
@@ -1651,58 +1041,20 @@ lambdas = θ[:,end]
 p = density(10 .^lambdas, xlabel = "labelling rate", ylabel = "probabiliy density", title = g_name, xlims = (10^(-0.8), 1.1), linewidth = 5, color = :skyblue4, size = (400,300), dpi = 100,label = false)
 savefig(p,"gene_lambda_$m.png")
 
-#=
-p1,p2 = plot_const_posterior(kinetics,err[m][sel_genes[m][g]][1:length(particles)],m);
-[savefig(p1[i],"Julia/paper_figures/supplement/fig_3/posterior_densities_$i.svg") for i in 1:lastindex(p1)];
-[savefig(p2[i],"Julia/paper_figures/supplement/fig_3/posterior_scatters_$i.svg") for i in 1:lastindex(p2)];
-=#
 
 p1,p2 = plot_const_posterior_density(kinetics,m);
-[savefig(p1[i],"Julia/paper_figures/supplement/fig_3/posterior_densities_$i.svg") for i in 1:lastindex(p1)];
-[savefig(p2[i],"Julia/paper_figures/supplement/fig_3/posterior_scatters_$i.svg") for i in 1:lastindex(p2)];
+[savefig(p1[i],"data/paper_figures/supplement/fig_3/posterior_densities_$i.svg") for i in 1:lastindex(p1)];
+[savefig(p2[i],"data/paper_figures/supplement/fig_3/posterior_scatters_$i.svg") for i in 1:lastindex(p2)];
 
 
-################################# Distributions of labelling rates #######################################
+
+#################################  laballing rate and gene length  #######################################
+
+
 col = [:skyblue4, :lightcyan3, :coral3, :mediumpurple3, :goldenrod1]
 
-p = density(10 .^map_sets[1][:,end], xlabel = "labelling rate", ylabel = "probabiliy density", linewidth = 4, color = col[1], size = (400,300), label = false)
-for i in 2:5
-    p = density!(10 .^map_sets[i][:,end], xlabel = "labelling rate", ylabel = "probabiliy density", linewidth = 4, color = col[i], size = (400,300), label = false)
-end
-p
 
-p = boxplot(10 .^map_sets[1][:,end], linewidth = 2, xticks = ([1:5;],["scaling \ngenes","non-scaling\n genes","burst frequency\n genes","burst size\n genes","decay rate\n genes"]), ylabel = "labelling rate", color = col[1], size = (500,300), dpi = 100, label = false);
-for i in 2:5
-    p = boxplot!(10 .^map_sets[i][:,end],  linewidth = 2, ylabel = "labelling rate", color = col[1], label = false)
-end
-p
-savefig(p,"const_non_const_lambdas_3.png")
-
-p = violin(10 .^vcat([m_s[:,end] for m_s in map_sets[1:2]]...), xticks = ([1:2;],["constant \ngenes","non-constant \ngenes"]), ylabel = "labelling rate", color = col[1], size = (400,300), dpi = 100,label = false);
-p = violin!(10 .^vcat([m_s[:,end] for m_s in map_sets[3:5]]...), xticks = ([1:2;],["constant \ngenes","non-constant \ngenes"]), ylabel = "labelling rate", color = col[5], size = (400,300), label = false);
-p
-
-savefig(p,"const_non_const_lambdas_1.png")
-
-p = boxplot(10 .^vcat([m_s[:,end] for m_s in map_sets[1:2]]...), xticks = ([1:2;],["constant \ngenes","non-constant \ngenes"]), ylabel = "labelling rate", color = col[1], size = (400,300), dpi = 200, label = false);
-p = boxplot!(10 .^vcat([m_s[:,end] for m_s in map_sets[3:5]]...), xticks = ([1:2;],["constant \ngenes","non-constant \ngenes"]), ylabel = "labelling rate", color = col[5], size = (400,300), label = false);
-p
-
-savefig(p,"const_non_const_lambdas_2.png")
-
-p = violin(10 .^map_sets[1][:,end], xticks = ([1:5;],["scaling \ngenes","non-scaling\n genes","burst frequency\n genes","burst size\n genes","decay rate\n genes"]), ylabel = "labelling rate", color = col[1], size = (500,300), label = false);
-for i in 2:5
-    p = violin!(10 .^map_sets[i][:,end], ylabel = "labelling rate", color = col[1], label = false)
-end
-p
-
-lambdas = [m_s[:,end] for m_s in map_sets]
-p = density(10 .^vcat(lambdas...),bandwidth = 0.05, xlims = (10^(-0.8), 1.1), xlabel = "labelling rate", ylabel = "probabiliy density", linewidth = 5, color = :skyblue4, size = (400,300), dpi = 100, label = false)
-savefig(p,"all_lambdas.png")
-
-
-
-genome_length_df = CSV.read("Julia/all_data/genes_loc_H.csv",DataFrame)
+genome_length_df = CSV.read("data/genes_loc_H.csv",DataFrame)
 
 
 all_sel_genes = vcat(sel_genes...)
@@ -1718,21 +1070,7 @@ end
 
 gene_length = genome_df[loc_idx,4] .- genome_df[loc_idx,3]
 
-range = (floor(log(10,minimum(gene_length))),ceil(log(10,maximum(gene_length)))-0.5);
-
-p = scatter(10 .^lambdas, log.(10,gene_length), xlabel = "labelling rate", ylabel = "log₁₀ ( gene length )", color = :skyblue4, label = false, size = (400,350), dpi = 300)
-
 rho = corspearman(10 .^lambdas,log.(10,gene_length))
-
-p = annotate!(0.8,2.7,text("Spearman's ρ = $(round(rho,digits = 2))", 11, color = :darkorange2))
-savefig(p,"gene_length_lambdas.png")
-
-
-m_ = mean(t_data[:,sub_genes],dims=1)[1,:]
-p = scatter(log.(10,m_), log.(10,gene_length), xlabel = "log₁₀( mean expression )", ylabel = "log₁₀( gene length )", color = :skyblue4, label = false, size = (400,350))
-
-c = corspearman(m_,gene_length)
-c = cor(m_,gene_length)
 
 
 # group by model
@@ -1757,15 +1095,6 @@ p = scatter(log.(10,gene_length[1]), 10 .^lambdas[1],  y_lims = (0.1,1.1), x_lim
 for i in 2:5
     p = scatter!(log.(10,gene_length[i]), 10 .^lambdas[i], color = col[i], markeralpha = 0.9, markersize = 5, label = false)
 end
-p
-#rho = corspearman(10 .^lambdas,log.(10,gene_length))
-
 p = annotate!(4.5,0.15,text("overall Spearman's ρ = $(round(rho,digits = 2))", 12, color = :lightcyan4))
-savefig(p,"Julia/paper_figures/figure_3/gene_length_lambdas_per_m.svg")
 
-m_ = mean(t_data[:,sub_genes],dims=1)[1,:]
-p = scatter(log.(10,m_), log.(10,gene_length), xlabel = "log₁₀( mean expression )", ylabel = "log₁₀( gene length )", color = :skyblue4, label = false, size = (500,400))
-
-c = corspearman(m_,gene_length)
-c = cor(m_,gene_length)
-
+savefig(p,"data/paper_figures/figure_3/gene_length_lambdas_per_m.svg")

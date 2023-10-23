@@ -1,12 +1,12 @@
-f_1 = JDFFile("Julia/large_scale_simulations/errors/error_const.jdf")
+f_1 = JDFFile("data/large_scale_simulations/errors/error_const.jdf")
 
-f_2 = JDFFile("Julia/large_scale_simulations/errors/error_const_const.jdf")
+f_2 = JDFFile("data/large_scale_simulations/errors/error_const_const.jdf")
 
-f_3 = JDFFile("Julia/large_scale_simulations/errors/error_kon.jdf")
+f_3 = JDFFile("data/large_scale_simulations/errors/error_kon.jdf")
 
-f_4 = JDFFile("Julia/large_scale_simulations/errors/error_alpha.jdf")
+f_4 = JDFFile("data/large_scale_simulations/errors/error_alpha.jdf")
 
-f_5 = JDFFile("Julia/large_scale_simulations/errors/error_gamma.jdf")
+f_5 = JDFFile("data/large_scale_simulations/errors/error_gamma.jdf")
 
 
 model_name = ["const","const_const","kon","alpha","gamma"];
@@ -25,17 +25,17 @@ for g in 1:3419
         v::Vector{Int64} = findall(x->x<=ε,err_mat[:,j])
         if length(v) > 0
             sort_idx::Vector{Int64} = sortperm(err_mat[v,j])
-            open("Julia/posteriors/particles_"*model_name[j]*".txt", "a") do io
+            open("data/posteriors/particles_"*model_name[j]*".txt", "a") do io
                 DelimitedFiles.writedlm(io, reshape(v[sort_idx],1,:))
             end
-            open("Julia/posteriors/errors_"*model_name[j]*".txt", "a") do io
+            open("data/posteriors/errors_"*model_name[j]*".txt", "a") do io
                 DelimitedFiles.writedlm(io, reshape(sort(err_mat[v,j]),1,:))
             end
         else
-            open("Julia/posteriors/particles_"*model_name[j]*".txt", "a") do io
+            open("data/posteriors/particles_"*model_name[j]*".txt", "a") do io
                 DelimitedFiles.writedlm(io, [0])
             end
-            open("Julia/posteriors/errors_"*model_name[j]*".txt", "a") do io
+            open("data/posteriors/errors_"*model_name[j]*".txt", "a") do io
                 DelimitedFiles.writedlm(io, [10.0])
             end
         end

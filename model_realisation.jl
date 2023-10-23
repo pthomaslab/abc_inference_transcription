@@ -294,7 +294,7 @@ function plot_moments(s_mean::Vector{Float64}, s_ff::Vector{Float64}, m::Int64)
 end
 
 ################################### Load data ##########################################
-uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("Julia/all_data/",".csv")
+uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("data/",".csv")
 total_data = uu_data + us_data + lu_data + ls_data
 
 ncells, ngenes = size(us_data)
@@ -364,28 +364,28 @@ scaling = 1
 
 p = solution_plotter(θ, vary_map, scaling, n_steps, iv, t0, cycle, agevec[end], pulsevec[7], chasevec[7])
 #s = get_synthetic_data(θ,vary_map,scaling,n_steps,iv,agevec,cycle,pulsevec[7],chasevec[7],t0,downsampling,betas[pulse_idx],age[pulse_idx])
-savefig(p,"Julia/paper_figures/supplement/const_scaling_realisation.pdf")
+savefig(p,"data/paper_figures/supplement/const_scaling_realisation.pdf")
 
 p = plot_rate(θ,vary_flag,n_steps,scaling,cycle,m)
-savefig(p,"Julia/paper_figures/supplement/fig_2/scaling_synthesis.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/scaling_synthesis.pdf")
 
 p1,p2 = plot_moments(s_pulse[:,1], s_pulse[:,2], m)
 p1
 p2
-savefig(p1,"Julia/paper_figures/supplement/fig_2/const_scaling_mean.pdf")
-savefig(p2,"Julia/paper_figures/supplement/fig_2/const_scaling_ff.pdf")
+savefig(p1,"data/paper_figures/supplement/fig_2/const_scaling_mean.pdf")
+savefig(p2,"data/paper_figures/supplement/fig_2/const_scaling_ff.pdf")
 
 which_id_data = 1
 p = plot_id_specific_stats(s_ratios, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/const_scaling_ratios.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/const_scaling_ratios.pdf")
 
 which_id_data = 2
 p = plot_id_specific_stats(s_mean_corr, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/const_scaling_mean_corr.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/const_scaling_mean_corr.pdf")
 
 which_id_data = 3
 p = plot_id_specific_stats(s_corr_mean, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/const_scaling_corr_mean.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/const_scaling_corr_mean.pdf")
 
 
 m = 2
@@ -399,29 +399,29 @@ scaling = 0
 
 p = solution_plotter(θ, vary_map, scaling, n_steps, iv, t0, cycle, agevec[end], pulsevec[7], chasevec[7])
 #s = get_synthetic_data(θ,vary_map,scaling,n_steps,iv,agevec,cycle,pulsevec[7],chasevec[7],t0,downsampling,betas[pulse_idx],age[pulse_idx])
-savefig(p,"Julia/paper_figures/supplement/const_non_scaling_realisation.pdf")
+savefig(p,"data/paper_figures/supplement/const_non_scaling_realisation.pdf")
 
 p = plot_rate(θ,vary_flag,n_steps,scaling,cycle,m)
-savefig(p,"Julia/paper_figures/supplement/fig_2/non_scaling_synthesis.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/non_scaling_synthesis.pdf")
 
 
 which_id_data = 1
 p = plot_id_specific_stats(s_ratios, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/const_non_scaling_ratios.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/const_non_scaling_ratios.pdf")
 
 which_id_data = 2
 p = plot_id_specific_stats(s_mean_corr, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/const_non_scaling_mean_corr.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/const_non_scaling_mean_corr.pdf")
 
 which_id_data = 3
 p = plot_id_specific_stats(s_corr_mean, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/const_non_scaling_corr_mean.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/const_non_scaling_corr_mean.pdf")
 
 p1,p2 = plot_moments(s_pulse[:,1], s_pulse[:,2], m)
 p1
 p2
-savefig(p1,"Julia/paper_figures/supplement/fig_2/const_non_scaling_mean.pdf")
-savefig(p2,"Julia/paper_figures/supplement/fig_2/const_non_scaling_ff.pdf")
+savefig(p1,"data/paper_figures/supplement/fig_2/const_non_scaling_mean.pdf")
+savefig(p2,"data/paper_figures/supplement/fig_2/const_non_scaling_ff.pdf")
 
 
 m = 3
@@ -433,30 +433,30 @@ scaling = 1
 
 p = solution_plotter(θ, vary_map, scaling, n_steps, iv, t0, cycle, agevec[end], pulsevec[7], chasevec[7])
 #s = get_synthetic_data(θ,vary_map,scaling,n_steps,iv,agevec,cycle,pulsevec[7],chasevec[7],t0,downsampling,betas[pulse_idx],age[pulse_idx])
-savefig(p,"Julia/paper_figures/supplement/fig_2/burst_freq_realisation.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/burst_freq_realisation.pdf")
 
 p = plot_rate(θ,vary_flag,n_steps,scaling,cycle,m)
-savefig(p,"Julia/paper_figures/supplement/fig_2/burst_freq.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/burst_freq.pdf")
 
 
 p1,p2 = plot_moments(s_pulse[:,1], s_pulse[:,2], m)
 p1
 p2
-savefig(p1,"Julia/paper_figures/supplement/fig_2/burst_freq_mean.pdf")
-savefig(p2,"Julia/paper_figures/supplement/fig_2/burst_freq_ff.pdf")
+savefig(p1,"data/paper_figures/supplement/fig_2/burst_freq_mean.pdf")
+savefig(p2,"data/paper_figures/supplement/fig_2/burst_freq_ff.pdf")
 
 
 which_id_data = 1
 p = plot_id_specific_stats(s_ratios, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/burst_freq_ratios.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/burst_freq_ratios.pdf")
 
 which_id_data = 2
 p = plot_id_specific_stats(s_mean_corr, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/burst_freq_mean_corr.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/burst_freq_mean_corr.pdf")
 
 which_id_data = 3
 p = plot_id_specific_stats(s_corr_mean, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/burst_freq_corr_mean.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/burst_freq_corr_mean.pdf")
 
 
 m = 4
@@ -468,31 +468,31 @@ scaling = 1
 
 
 p = solution_plotter(θ, vary_map, scaling, n_steps, iv, t0, cycle, agevec[end], pulsevec[7], chasevec[7])
-savefig(p,"Julia/paper_figures/supplement/fig_2/burst_size_realisation.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/burst_size_realisation.pdf")
 
 p = plot_rate(θ,vary_flag,n_steps,scaling,cycle,m)
-savefig(p,"Julia/paper_figures/supplement/fig_2/burst_size.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/burst_size.pdf")
 
 
 p1,p2 = plot_moments(s_pulse[:,1], s_pulse[:,2], m)
 p1
 p2
-savefig(p1,"Julia/paper_figures/supplement/fig_2/burst_size_mean.pdf")
-savefig(p2,"Julia/paper_figures/supplement/fig_2/burst_size_ff.pdf")
+savefig(p1,"data/paper_figures/supplement/fig_2/burst_size_mean.pdf")
+savefig(p2,"data/paper_figures/supplement/fig_2/burst_size_ff.pdf")
 
 
 
 which_id_data = 1
 p = plot_id_specific_stats(s_ratios, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/burst_size_ratios.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/burst_size_ratios.pdf")
 
 which_id_data = 2
 p = plot_id_specific_stats(s_mean_corr, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/burst_size_mean_corr.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/burst_size_mean_corr.pdf")
 
 which_id_data = 3
 p = plot_id_specific_stats(s_corr_mean, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/burst_size_corr_mean.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/burst_size_corr_mean.pdf")
 
 m = 5
 θ = log.(10,[2.0,1.0,85.0,2.0,3.0,1.0,1.0,1.5,0.7])
@@ -503,26 +503,26 @@ scaling = 1
 
 p = solution_plotter(θ, vary_map, scaling, n_steps, iv, t0, cycle, agevec[end], pulsevec[7], chasevec[7])
 #s = get_synthetic_data(θ,vary_map,scaling,n_steps,iv,agevec,cycle,pulsevec[7],chasevec[7],t0,downsampling,betas[pulse_idx],age[pulse_idx])
-savefig(p,"Julia/paper_figures/supplement/fig_2/decay_rate_realisation.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/decay_rate_realisation.pdf")
 
 p = plot_rate(θ,vary_flag,n_steps,scaling,cycle,m)
-savefig(p,"Julia/paper_figures/supplement/fig_2/decay_rate.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/decay_rate.pdf")
 
 p1,p2 = plot_moments(s_pulse[:,1], s_pulse[:,2], m)
 p1
 p2
-savefig(p1,"Julia/paper_figures/supplement/fig_2/decay_rate_mean.pdf")
-savefig(p2,"Julia/paper_figures/supplement/fig_2/decay_rate_ff.pdf")
+savefig(p1,"data/paper_figures/supplement/fig_2/decay_rate_mean.pdf")
+savefig(p2,"data/paper_figures/supplement/fig_2/decay_rate_ff.pdf")
 
 which_id_data = 1
 p = plot_id_specific_stats(s_ratios, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/decay_rate_ratios.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/decay_rate_ratios.pdf")
 
 which_id_data = 2
 p = plot_id_specific_stats(s_mean_corr, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/decay_rate_mean_corr.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/decay_rate_mean_corr.pdf")
 
 which_id_data = 3
 p = plot_id_specific_stats(s_corr_mean, m, which_id_data)
-savefig(p,"Julia/paper_figures/supplement/fig_2/decay_rate_corr_mean.pdf")
+savefig(p,"data/paper_figures/supplement/fig_2/decay_rate_corr_mean.pdf")
 

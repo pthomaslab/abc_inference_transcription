@@ -193,14 +193,14 @@ function get_summary_stats(u_data::Vector{Float64}, l_data::Vector{Float64}, n_c
     return pulse_data,pulse_se,chase_data,chase_se,ratio_data,ratio_se,mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se
 end
 
-all_genes = Int64.(readdlm("Julia/all_data/selected_genes.txt")[:,1])
-gene_id = readdlm("Julia/all_data/all_gene_ids.txt")[:,1]
-all_gene_names = readdlm("Julia/all_data/all_gene_names.txt")[:,1]
-genes = all_genes[Int64.(readdlm("Julia/all_data/selected_genes_main_subset.txt")[:,1])]
+all_genes = Int64.(readdlm("data/selected_genes.txt")[:,1])
+gene_id = readdlm("data/all_gene_ids.txt")[:,1]
+all_gene_names = readdlm("data/all_gene_names.txt")[:,1]
+genes = all_genes[Int64.(readdlm("data/selected_genes_main_subset.txt")[:,1])]
 ids = gene_id[genes];
 
 gene_names = replace(all_gene_names[genes], NaN => "NaN")
-uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("Julia/all_data/",".csv")
+uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("data/",".csv")
 #total_data = uu_data + us_data + lu_data + ls_data
 ncells,ngenes = size(us_data);
 
@@ -225,34 +225,34 @@ age_id_distribution = hcat([length.(cells) / sum(length.(cells)) for cells in ce
 
 for g in 1:length(genes)
     p_data,p_se,c_data,c_se,r_data,r_se,mc_data,mc_se,cm_data,cm_se = get_summary_stats(u_data[:,g],l_data[:,g],n_clusters,age,experiment,cond_vec,pulse_idx,chase_idx,age_id_distribution)
-    open("Julia/all_data/summary_stats/pulse_data.txt", "a") do io
+    open("data/summary_stats/pulse_data.txt", "a") do io
         writedlm(io, transpose(p_data))
     end 
-    open("Julia/all_data/summary_stats/pulse_se.txt", "a") do io
+    open("data/summary_stats/pulse_se.txt", "a") do io
         writedlm(io, transpose(p_se))
     end
-    open("Julia/all_data/summary_stats/chase_data.txt", "a") do io
+    open("data/summary_stats/chase_data.txt", "a") do io
         writedlm(io, transpose(c_data))
     end
-    open("Julia/all_data/summary_stats/chase_se.txt", "a") do io
+    open("data/summary_stats/chase_se.txt", "a") do io
         writedlm(io, transpose(c_se))
     end
-    open("Julia/all_data/summary_stats/ratio_data.txt", "a") do io
+    open("data/summary_stats/ratio_data.txt", "a") do io
         writedlm(io, transpose(r_data))
     end
-    open("Julia/all_data/summary_stats/ratio_se.txt", "a") do io
+    open("data/summary_stats/ratio_se.txt", "a") do io
         writedlm(io, transpose(r_se))
     end
-    open("Julia/all_data/summary_stats/mean_corr_data.txt", "a") do io
+    open("data/summary_stats/mean_corr_data.txt", "a") do io
         writedlm(io, transpose(mc_data))
     end
-    open("Julia/all_data/summary_stats/mean_corr_se.txt", "a") do io
+    open("data/summary_stats/mean_corr_se.txt", "a") do io
         writedlm(io, transpose(mc_se))
     end
-    open("Julia/all_data/summary_stats/corr_mean_data.txt", "a") do io
+    open("data/summary_stats/corr_mean_data.txt", "a") do io
         writedlm(io, transpose(cm_data))
     end
-    open("Julia/all_data/summary_stats/corr_mean_se.txt", "a") do io
+    open("data/summary_stats/corr_mean_se.txt", "a") do io
         writedlm(io, transpose(cm_se))
     end
 end

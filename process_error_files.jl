@@ -22,5 +22,5 @@ println("Read.")
 df = DataFrame(data,:auto)
 println("Dataframe.")
 
-JDF.save("Julia/large_scale_simulations/errors/error_const.jdf", df)
+JDF.save("data/large_scale_simulations/errors/error_const.jdf", df)
 println("JDF done.")

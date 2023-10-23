@@ -72,7 +72,7 @@ function abc_sim(θ::Vector{Float64}, iv::Vector{Float64}, agevec::Vector{Float6
 end
 
 
-uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("Julia/all_data/",".csv")
+uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("data/",".csv")
 total_data = uu_data + us_data + lu_data + ls_data
 
 ncells, ngenes = size(us_data)

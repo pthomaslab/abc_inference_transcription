@@ -276,9 +276,9 @@ c_genes = cluster_c_genes(c_prob,c_lb,c_ub,c_)
 writedlm("Julia/model_selection/c_/const_scaling_ids.txt",ids[c_genes[1]])
 writedlm("Julia/model_selection/c_/const_non_scaling_ids.txt",ids[c_genes[2]])
 
-writedlm("Julia/model_selection/c_/c_scaling_genes_$ε.txt",c_genes[1])
+writedlm("Julia/model_selection/const_genes.txt",c_genes[1])
 
-writedlm("Julia/model_selection/c_/c_non_scaling_genes_$ε.txt",c_genes[2])
+writedlm("Julia/model_selection/const_const_genes.txt",c_genes[2])
 =#
 freq_c_genes = length.(c_genes)
 
@@ -310,11 +310,11 @@ writedlm(dir*"nc_/kon_alpha_gene_ids.txt",ids[nc_genes[2][1]])
 writedlm(dir*"nc_/kon_gamma_gene_ids.txt",ids[nc_genes[2][2]])
 writedlm(dir*"nc_/alpha_gamma_gene_ids.txt",ids[nc_genes[2][3]])
 
-writedlm("Julia/model_selection/nc_/kon_genes_$ε.txt",nc_genes[1][1])
+writedlm("Julia/model_selection/kon_genes.txt",nc_genes[1][1])
 
-writedlm("Julia/model_selection/nc_/alpha_genes_$ε.txt",nc_genes[1][2])
+writedlm("Julia/model_selection/alpha_genes.txt",nc_genes[1][2])
 
-writedlm("Julia/model_selection/nc_/gamma_genes_$ε.txt",nc_genes[1][3])
+writedlm("Julia/model_selection/gamma_genes.txt",nc_genes[1][3])
 =#
 
 plot_freq = vcat([freq_nc_genes[1],freq_nc_genes[2][1:2],[freq_nc_genes[2][3] + sum(freq_nc_genes[3])]]...) ./ length(nc_)
