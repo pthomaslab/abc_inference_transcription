@@ -10,9 +10,7 @@ using Plots
 using Plots.PlotMeasures
 using Colors
 using StatsPlots
-using BenchmarkTools
-using Profile
-using LsqFit
+
 
 include("load_data.jl")
 include("model.jl")
@@ -173,33 +171,20 @@ age_id_distribution = [length.(cells) ./ n_cells_id for cells in cells_age_id]
 id_distribution = length.(cells_per_id) ./ n_cells_id
 
 
+age_dist = [sum(length.(cells)) for cells in cells_id_age] ./ length(vcat(cells_per_id...))   
+
+
 mean_data = hcat([mean(t_data[cells,:], dims = 1)[1,:] for cells in cells_per_age]...);
 var_data = hcat([var(t_data[cells,:], dims = 1)[1,:] for cells in cells_per_age]...);
 
-
-ε = 4.8;
-model_names = ["const","const_const","kon","alpha","gamma"];     
-posterior = Vector{Vector{Vector{Int64}}}(undef,length(model_names))
-for (i,name) in enumerate(model_names)
-    file = open("data/posteriors/$ε/particles_"*name*".txt", "r")
-    posterior[i] = Vector{Vector{Int64}}(undef,length(genes))
-    for (j,line) in enumerate(eachline(file))
-        posterior[i][j] = parse.(Int64,split(line,"\t")) ## or whatever else you want to do with the line.
-    end
-    close(file)
-end  
-
-n_particles_model = get_n_particles(posterior)
-n_particles_mat = hcat(n_particles_model...)
-n_particles = sum(n_particles_mat, dims=2)[:,1]
 
 n_groups_sims = 1
 sets = [load_param_sets("data/large_scale_simulations/",m,n_groups_sims) for m in 1:5]
 
 
-maps = Int64.(readdlm("data/posteriors/$ε/map_gene_per_model.txt")[:,1:5])
+maps = Int64.(readdlm("data/posteriors/map_gene_per_model.txt")[:,1:5])
 
-
+model_names = ["const","const_const","kon","alpha","gamma"];     
 sel_genes = [Int64.(readdlm("data/model_selection/"*mn*"_genes.txt")[:,1]) for mn in model_names]
 
 map_sets = [sets[m][maps[sel_genes[m],m],:] for m in 1:lastindex(model_names)];
@@ -207,7 +192,7 @@ map_sets = [sets[m][maps[sel_genes[m],m],:] for m in 1:lastindex(model_names)];
 
 col = [:skyblue4, :lightcyan3, :coral3, :mediumpurple3, :goldenrod1]
 
-################################## Based on data ##################################
+#################################      based on data      ######################################
 
 gene_vec = vcat(sel_genes...)
 
@@ -227,10 +212,10 @@ p = scatter!(log.(10,mn[5]), log.(10,cv[5]), color = :gray, markersize = 5,marke
 p = plot!(log.(10,y), log.(10, 1 ./ y), label = "1/mean scaling", linewidth = 4, linestyle = :dash, color = :lightblue3)
 p = plot!(log.(10,y), ones(length(y)) .* log(10,minimum(minimum.(cv))), label = "extrinsic noise limit", linewidth = 4, linestyle = :dash, color = :coral3, linealpha = 0.75)
 
-savefig(p, "data/paper_figures/figure_3/data_based/noise_landscape_gray.svg")
+savefig(p, "data/paper_figures/figure_3/data_based/noise_landscape.svg")
 
-########################################################################################################################################
-col = [:skyblue4, :lightcyan3, :coral3, :mediumpurple3, :goldenrod1]
+
+
 
 id_labels = ["pulse_15", "pulse_30", "pulse_45",
             "pulse_60", "pulse_120", "pulse_180", "chase_0",
@@ -258,27 +243,9 @@ end
 mean_ccp = [map(.+,[m .* id_distribution[j] for (j,m) in enumerate(m_)]...) for m_ in tot_mean]
 
 
-#intrinsic noise components
 u_m = [sum(hcat([sum(transpose(transpose(u) .* age_id),dims=2)[:,1] for (u,age_id) in zip(u_,age_id_distribution)]...),dims=2)[:,1] for u_ in u_mean]
 l_m = [sum(hcat([sum(transpose(transpose(l) .* age_id),dims=2)[:,1] for (l,age_id) in zip(l_,age_id_distribution)]...),dims=2)[:,1] for l_ in l_mean]
 m = u_m .+ l_m
-# intrinsic noise components
-mean_var_u = [sum(hcat([sum(transpose(transpose(u) .* age_id),dims=2)[:,1] for (u,age_id) in zip(u_,age_id_distribution)]...),dims=2)[:,1] for u_ in u_var]
-mean_var_l = [sum(hcat([sum(transpose(transpose(l) .* age_id),dims=2)[:,1] for (l,age_id) in zip(l_,age_id_distribution)]...),dims=2)[:,1] for l_ in l_var]
-mean_var = mean_var_u .+ mean_var_l
-
-mean_cov = [sum(hcat([sum(transpose(transpose(ul) .* age_id),dims=2)[:,1] for (ul,age_id) in zip(u_l_,age_id_distribution)]...),dims=2)[:,1] for u_l_ in ul_cov]
-
-int_v = mean_var .+ (2 .* mean_cov)
-
-# extrinsic noise components
-ext_v = Vector{Vector{Float64}}(undef,length(sel_genes));
-for i in 1:length(sel_genes)
-    ext_v[i] = Vector{Float64}(undef,length(sel_genes[i]))
-    for j in 1:length(sel_genes[i])
-        ext_v[i][j] = weighted_cov(vcat([tot_mean[i][k][j,:] for k in 1:length(id_labels)]...),vcat([tot_mean[i][k][j,:] for k in 1:length(id_labels)]...),vcat(age_id_distribution...))
-    end
-end
 
 
 var_mean_ccp = Vector{Vector{Float64}}(undef,length(sel_genes))
@@ -289,42 +256,10 @@ for i in 1:length(sel_genes)
     end
 end
 
-
-v =  int_v .+ ext_v
-
-
-tot_noise = [v_ ./ (m .^2) for (v_,m) in zip(v,m)]
-kinetics_noise = [v_ ./ (m_ .^2) for (v_,m_) in zip(int_v,m)]
-ext_noise = [v_ ./ (m_ .^2) for (v_,m_) in zip(ext_v,m)]
-
-tx_deg_noise = [v_ ./ (m_ .^2) for (v_,m_) in zip(mean_var,m)]
-bursty_noise = kinetics_noise .- tx_deg_noise
-
 ccd_noise = [v_ ./ (m_ .^2) for (v_,m_) in zip(var_mean_ccp,m)]
-time_noise = ext_noise .- ccd_noise
-
-
-
-col = [:skyblue4, :lightcyan4]
-p = density(filter_quantiles(reshape(ccd_noise[1],:,1),0.99), linewidth = 5, color = col[1], label = "scaling genes", title = "cell-cycle dependence of constant genes ", titlefontsize = 12,
- legendfontsize = 11, background_color_legend = :transparent,fg_legend = :transparent, size = (400,300), ylabel = "probability density", xlabel = "observed cell-cycle dependence noise")
-p = density!(ccd_noise[2], linewidth = 5, linealpha = 0.5, color = col[2], label = "non-scaling genes")
-
-savefig(p, "data/paper_figures/figure_4/observed_ccd_noise.svg")
-
-q = 1.0
-p = boxplot(filter_quantiles(reshape(ccd_noise[1],:,1),q), linewidth = 1, color = col[1], label = false, 
-ylabelfontsize = 10,xtickfontsize = 11, background_color_legend = :transparent,fg_legend = :transparent, size = (400,300), xticks = ([1,2],["scaling genes","non-scaling genes"]), ylabel = "observed cell-cycle dependence noise  ", outliers = false)
-p = boxplot!(filter_quantiles(reshape(ccd_noise[2],:,1),q), linewidth = 1, color = col[2], label = false, outliers = false)
-
-savefig(p, "data/paper_figures/figure_4/observed_ccd_noise_1.svg")
-
 
 
 #################################      based on recovered statistics      #################################
-n_cells_id = length(vcat(cells_per_id...))
-age_dist = [sum(length.(cells)) for cells in cells_id_age] ./ n_cells_id    #[sum(length.(cells)) for cells in cells_id_age] ./ n_cells_id
-
 col = [:skyblue4, :lightcyan3, :coral3, :mediumpurple3, :goldenrod1]
 
 id_labels = ["pulse_15", "pulse_30", "pulse_45",
@@ -483,79 +418,32 @@ savefig(p, "data/paper_figures/figure_3/model_based/ccd_proportion.svg")
 
 
 
+# observed and recovered cell cycle-dependent variation
+
+col = [:skyblue4, :lightcyan4]
+p = boxplot(ccd_noise[1], linewidth = 1, color = col[1], label = false, 
+ylabelfontsize = 10,xtickfontsize = 11, background_color_legend = :transparent,fg_legend = :transparent, size = (500,300), bottom_margin=2mm,
+xticks = ([1,2,3,4],["scaling \ngenes","non-scaling \ngenes","scaling \ngenes","non-scaling \ngenes"]), ylabel = "cell cycle variation", outliers = false)
+p = boxplot!(ccd_noise[2], linewidth = 1, color = col[2], label = false, outliers = false)
+p = boxplot!(s_ccd_noise[1], linewidth = 1, color = col[1], label = false, 
+ylabelfontsize = 10,xtickfontsize = 11, outliers = false)
+p = boxplot!(s_ccd_noise[2], linewidth = 1, color = col[2], label = false, outliers = false)
+
+savefig(p, "data/paper_figures/figure_4/observed_recovered_ccd_noise.svg")
+
+
 ############################     kinetics regulation on noise-mean plots      ############################
 
 burst_size = vcat(map_sets[1][:,3] .- map_sets[1][:,2],map_sets[2][:,3] .- map_sets[2][:,2])
 x = vcat(s_m[1:2]...)[sortperm(burst_size)]
 y = vcat(s_bursty_noise[1:2]...)[sortperm(burst_size)]
 
-#x1 = vcat([minimum(vcat(s_m[1:2]...)) - 2.0],sort(vcat(s_m[1:2]...)))
-
-p = scatter(log.(10,x), log.(10,y), zcolor = sort(burst_size), color = :viridis, title = "bursty promoter noise vs mean", ylabel = "log₁₀(noise)",
-        xlims = (-1,3.5),ylims = (-10,3.5), xlabel = "log₁₀(mean)", label = nothing, colorbar_title = "log₁₀(burst size)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, size = (500,400), dpi = 300)
-#p = plot!(log.(10,x1), log.(10, 1 ./ x1), label = "1/mean scaling", linewidth = 4, linestyle = :dash, color = :lightblue3)
-
-savefig(p, "data/paper_figures/figure_3/model_based/bursty_noise_burst_size")
-
-
-x = vcat(s_m[1:2]...)
-y = vcat(s_bursty_noise[1:2]...)[sortperm(x)]
-
-p = scatter(burst_size[sortperm(x)], log.(10,y),zcolor = log.(10,sort(x)), color = :viridis, title = "bursty promoter noise vs burst size", ylabel = "log₁₀(CV²)", 
-        xlims = (-2.5,4.0),ylims = (-3.0,1.0),xlabel = "log₁₀(burst size)", label = nothing, colorbar_title = "\n log₁₀(mean)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, right_margin = 5mm, size = (500,400), dpi = 300)
-l = [-2.5:0.1:4.0;]
-p = plot!(l, l, label = false, linewidth = 4, linealpha = 0.7, linestyle = :dash, color = :lightblue3)
-savefig(p, "data/paper_figures/figure_3/model_based/burst_size_bursty_noise")
 
 
 burst_freq = vcat(map_sets[1][:,1],map_sets[2][:,1])
 x = vcat(s_m[1:2]...)[sortperm(burst_freq)]
 y = vcat(s_bursty_noise[1:2]...)[sortperm(burst_freq)]
 
-p = scatter(log.(10,x), log.(10,y), zcolor = sort(burst_freq), color = :viridis, title = "bursty promoter noise vs mean", ylabel = "log₁₀(noise)", 
-        xlims = (-1,3.5),ylims = (-10,2.0),clims = (-4,2.0), xlabel = "log₁₀(mean)", label = nothing, colorbar_title = "log₁₀(burst frequency)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, size = (500,400), dpi = 300)
-#p = plot!(log.(10,x1), log.(10, 1 ./ x1), label = "1/mean scaling", linewidth = 4, linestyle = :dash, color = :lightblue3)
-
-savefig(p, "data/paper_figures/figure_3/model_based/bursty_noise_burst_freq")
-
-
-x = vcat(s_m[1:2]...)
-y = vcat(s_bursty_noise[1:2]...)[sortperm(x)]
-
-p = scatter(burst_freq[sortperm(x)], log.(10,y),zcolor = log.(10,sort(x)), color = :viridis, title = "bursty promoter noise vs burst frequency", ylabel = "log₁₀(CV²)", 
-        xlims = (-3.0,3.0),ylims = (-3.0,1.0),xlabel = "log₁₀(burst frequency)", label = nothing, colorbar_title = "\n log₁₀(mean)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, right_margin = 5mm, size = (500,400), dpi = 300)
-l = [-3.0:0.1:3.0;]
-p = plot!(l, -l, label = false, linewidth = 4, linealpha = 0.7, linestyle = :dash, color = :lightblue3)
-savefig(p, "data/paper_figures/figure_3/model_based/burst_freq_bursty_noise")
-
-x = vcat(s_m[1:2]...)[sortperm(burst_freq)]
-y = vcat(s_bursty_noise[1:2]...)[sortperm(burst_freq)]
-
-p = scatter(log.(10,x), log.(10,y),zcolor = sort(burst_freq), color = :viridis, ylabel = "log₁₀(bursty promoter noise)", 
-        xlabel = "log₁₀(mean)", label = nothing, colorbar_title = "\n log₁₀(burst frequency)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, right_margin = 5mm, size = (500,400), dpi = 300)
-savefig(p, "bursty_noise_mean_burst_freq")
-
-x = vcat(s_m[1:2]...)[sortperm(burst_size)]
-y = vcat(s_bursty_noise[1:2]...)[sortperm(burst_size)]
-
-p = scatter(log.(10,x), log.(10,y),zcolor = sort(burst_size), color = :viridis, ylabel = "log₁₀(bursty promoter noise)", 
-        xlabel = "log₁₀(mean)", label = nothing, colorbar_title = "\n log₁₀(burst size)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, right_margin = 5mm, size = (500,400), dpi = 300)
-savefig(p, "bursty_noise_mean_burst_size")
-
-y = vcat(s_bursty_noise[1:2]...)
-p = scatter(burst_size[sortperm(y)], burst_freq[sortperm(y)], zcolor = log.(10,sort(y)), color = :viridis, ylabel = "log₁₀(burst frequency)", 
-        xlims = (-2.5,4.5),ylims = (-3.0,3.5), xlabel = "log₁₀(burst size)", label = nothing, colorbar_title = "log₁₀(bursty promoter noise)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, size = (500,400), dpi = 300)
-l = [-2.5:0.1:4.0;]
-p = plot!(l, -l, label = false, linewidth = 4, linealpha = 0.7, linestyle = :dash, color = :lightblue3)
-savefig(p, "data/paper_figures/figure_3/model_based/burst_freq_bursty_size_1.svg")
-savefig(p, "burst_freq_bursty_size_1.png")
 
 y = vcat(s_bursty_noise[1:2]...)[sortperm(burst_freq)]
 p = scatter(burst_size[sortperm(burst_freq)], log.(10,y),  zcolor = sort(burst_freq), color = :viridis, ylabel = "log₁₀(bursty promoter noise)", 
@@ -563,15 +451,7 @@ p = scatter(burst_size[sortperm(burst_freq)], log.(10,y),  zcolor = sort(burst_f
          legendfontsize = 9, fg_legend = :transparent, size = (500,400), dpi = 300)
 #l = [-2.5:0.1:4.0;]
 #p = plot!(l, l, label = false, linewidth = 4, linealpha = 0.7, linestyle = :dash, color = :lightblue3)
-savefig(p, "data/paper_figures/figure_3/model_based/burst_freq_bursty_size_2.svg")
-savefig(p, "burst_freq_bursty_size_2.png")
-
-
-x = vcat(s_m[1:2]...)[sortperm(burst_size)]
-y = vcat(s_tx_deg_noise[1:2]...)[sortperm(burst_size)]
-p = scatter(log.(10,x), log.(10,y),  zcolor = sort(burst_size), color = :viridis, ylabel = "log₁₀(bursty promoter noise)", 
-        xlims = (0,4), xlabel = "log₁₀(burst size)", label = nothing, colorbar_title = "log₁₀(burst frequency)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, size = (500,400), dpi = 300)
+savefig(p, "data/paper_figures/figure_3/model_based/burst_freq_bursty_size.svg")
 
 
 burst_freq = vcat(map_sets[1][:,1] .- map_sets[1][:,4],map_sets[2][:,1] .- map_sets[2][:,4])
@@ -597,41 +477,6 @@ p = scatter!(log.(10,x), log.(10,y), zcolor = sort(burst_size), color = :viridis
 savefig(p, "data/paper_figures/figure_3/model_based/burst_size_tx_deg_noise.svg")
     
 
-y = vcat(s_tx_deg_noise[1:2]...)[sortperm(burst_size)]
-p = scatter(burst_freq[sortperm(burst_size)], log.(10,y),  zcolor = sort(burst_size), color = :viridis, ylabel = "log₁₀(bursty promoter noise)", 
-        xlims = (-3,4.5), xlabel = "log₁₀(burst size)", label = nothing, colorbar_title = "log₁₀(burst frequency)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, size = (500,400), dpi = 300)
-#l = [-2.5:0.1:4.0;]
-#p = plot!(l, l, label = false, linewidth = 4, linealpha = 0.7, linestyle = :dash, color = :lightblue3)
-savefig(p, "data/paper_figures/figure_3/model_based/burst_freq_bursty_size_2.svg")
-savefig(p, "burst_freq_bursty_size_2.png")
-
-
-
-y = vcat(s_tx_deg_noise[1:2]...)[sortperm(burst_freq)]
-p = scatter(burst_size[sortperm(burst_freq)], log.(10,y),  zcolor = sort(burst_freq), color = :viridis, ylabel = "bursty promoter noise", 
-        xlims = (-3,4.5), xlabel = "log₁₀(burst size)", label = nothing, colorbar_title = "log₁₀(burst frequency)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, size = (500,400), dpi = 300)
-#l = [-2.5:0.1:4.0;]
-savefig(p, "burst_freq_bursty_size_3.png")
-
-y = vcat(s_int_noise[1:2]...)[sortperm(burst_size)]
-p = scatter(burst_freq[sortperm(burst_size)], log.(10,y),  zcolor = sort(burst_freq), color = :viridis, ylabel = "bursty promoter noise", 
-        xlims = (-3,4.5), xlabel = "log₁₀(burst size)", label = nothing, colorbar_title = "log₁₀(burst frequency)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, size = (500,400), dpi = 300)
-#l = [-2.5:0.1:4.0;]
-savefig(p, "burst_freq_bursty_size_3.png")
-
-
-
-x = vcat(s_m[1:2]...)
-p = scatter(burst_size[sortperm(x)], burst_freq[sortperm(x)], zcolor = log.(10,sort(x)), color = :viridis, ylabel = "log₁₀(burst frequency)", 
-        xlims = (-2.5,4.5),ylims = (-3.0,3.5), xlabel = "log₁₀(burst size)", label = nothing, colorbar_title = "\n log₁₀(mean)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, right_margin = 5mm, size = (500,400), dpi = 300)
-l = [-2.5:0.1:4.0;]
-p = plot!(l, -l, label = false, linewidth = 4, linealpha = 0.7, linestyle = :dash, color = :lightblue3)
-savefig(p, "data/paper_figures/figure_3/model_based/burst_freq_bursty_size_mean")
-
 
 decay_rate = vcat(map_sets[1][:,4],map_sets[2][:,4])
 x = vcat(s_m[1:2]...)[sortperm(decay_rate)]
@@ -643,7 +488,7 @@ p = scatter(log.(10,x), log.(10,y), zcolor = sort(10 .^decay_rate), color = :vir
          legendfontsize = 9, fg_legend = :transparent, right_margin = 4mm, size = (500,400), dpi = 300)
 p = plot!(log.(10,x1), log.(10, 1 ./ x1), linewidth = 4, label = false,linealpha = 0.6,linestyle = :dash, color = :lightblue3)
 
-savefig(p, "data/paper_figures/figure_3/model_based/decay_rate_tx_deg_noise_1.svg")
+savefig(p, "data/paper_figures/figure_3/model_based/decay_rate_tx_deg_noise.svg")
 
 y = vcat(s_bursty_noise[1:2]...)[sortperm(decay_rate)]
 p = scatter(log.(10,x), log.(10,y), zcolor = sort(10 .^decay_rate), color = :viridis, ylabel = "log₁₀(bursty promoter noise)", 
@@ -662,73 +507,8 @@ p = scatter(log.(10,x), log.(10,y), zcolor = sort(10 .^decay_rate), color = :vir
 
 savefig(p, "data/paper_figures/figure_3/model_based/decay_rate_ccd_noise.svg")
 
-x = vcat(s_m[1:2]...)
-y = vcat(s_bursty_noise[1:2]...)[sortperm(x)]
-p = scatter(10 .^decay_rate[sortperm(x)], log.(10,y), zcolor = log.(10,sort(x)), color = :viridis, ylabel = "log₁₀(cell-cycle dependence noise)", 
-        xlabel = "decay rate", label = nothing, colorbar_title = "log₁₀(mean)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, right_margin = 4mm, size = (500,400), dpi = 300)
-
-savefig(p, "data/paper_figures/figure_3/model_based/decay_rate_tx_deg_noise_1.svg")
-
-x = vcat(s_m[1:2]...)
-y = vcat(s_ccd_noise[1:2]...)[sortperm(x)]
-p = scatter(10 .^decay_rate[sortperm(x)], log.(10,y), zcolor = log.(10,sort(x)), color = :viridis, ylabel = "log₁₀(cell-cycle dependence noise)", 
-        xlabel = "decay rate", label = nothing, colorbar_title = "log₁₀(mean)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, right_margin = 4mm, size = (500,400), dpi = 300)
-
-savefig(p, "data/paper_figures/figure_3/model_based/decay_rate_tx_deg_noise_1.svg")
 
 
 
-
-x = vcat(s_m[1:2]...)
-y = vcat(s_tx_deg_noise[1:2]...)[sortperm(x)]
-
-p = scatter(10 .^decay_rate[sortperm(x)], y,zcolor = log.(10,sort(x)), color = :viridis, ylabel = "log₁₀(transcription & decay noise)", 
-   xlabel = "log₁₀(decay rate)", label = nothing, colorbar_title = "log₁₀(mean)", markersize = 5, markeralpha = 0.9,
-         legendfontsize = 9, fg_legend = :transparent, size = (500,400), dpi = 300)
-p = plot!([-3:0.1:0.5], [-3:0.1:0.5], label = false, linewidth = 4, linealpha = 0.7, linestyle = :dash, color = :lightblue3)
-
-savefig(p, "data/paper_figures/figure_3/model_based/decay_rate_tx_deg_noise.svg")
-
-
-
-col = [:skyblue4, :lightcyan4]
-p = boxplot(ccd_noise[1], linewidth = 1, color = col[1], label = false, 
-ylabelfontsize = 10,xtickfontsize = 11, background_color_legend = :transparent,fg_legend = :transparent, size = (500,300), bottom_margin=2mm,
-xticks = ([1,2,3,4],["scaling \ngenes","non-scaling \ngenes","scaling \ngenes","non-scaling \ngenes"]), ylabel = "cell cycle variation", outliers = false)
-p = boxplot!(ccd_noise[2], linewidth = 1, color = col[2], label = false, outliers = false)
-p = boxplot!(s_ccd_noise[1], linewidth = 1, color = col[1], label = false, 
-ylabelfontsize = 10,xtickfontsize = 11, outliers = false)
-p = boxplot!(s_ccd_noise[2], linewidth = 1, color = col[2], label = false, outliers = false)
-
-savefig(p, "data/paper_figures/figure_4/observed_ccd_noise_2.svg")
-
-
-
-
-
-#cell cycle dependent noise
-cycle_label = ["G1", "G1/S", "S", "S/G2", "G2/M"]; 
-col = cgrad(:Blues,categorical=true,5);
-decay_rate = vcat(map_sets[5][:,vary_maps[5][4]])
-p = scatter(decay_rate[:,1],log.(10,s_noise_ccp[5][:,1]), color = col[1], ylabel = "log₁₀(noise)", 
-    xlims = (-3,2),ylims = (-3,2),xlabel = "log₁₀(decay rate)", label = cycle_label[1], markersize = 5, markeralpha = 0.9,
- legendfontsize = 9, legend = :topleft,background_color_legend = :transparent, fg_legend = :transparent, size = (500,400), dpi = 300);
-for j in 2:5
-    p = scatter!(decay_rate[:,j],log.(10,s_noise_ccp[5][:,j]),color = col[j], label = cycle_label[j],legendfontsize = 9, markersize = 5, markeralpha = 0.9,)
-end
-
-
-cycle_label = ["G1", "G1/S", "S", "S/G2", "G2/M"]; 
-col = cgrad(:Blues,categorical=true,5);
-decay_rate = vcat(map_sets[5][:,vary_maps[5][4]])
-p = scatter(log.(10,s_mean_ccp[5][:,1]),log.(10,s_noise_ccp[5][:,1]), color = col[1], ylabel = "log₁₀(noise)", 
-    xlims = (-3,2),ylims = (-3,2),xlabel = "log₁₀(decay rate)", label = cycle_label[1], markerstrokewidth = 0.1, markersize = 3 .* decay_rate[:,1], markeralpha = 0.9,
- legendfontsize = 9, legend = :topleft,background_color_legend = :transparent, fg_legend = :transparent, size = (500,400), dpi = 300);
-for j in 2:5
-    p = scatter!(log.(10,s_mean_ccp[5][:,j]),log.(10,s_noise_ccp[5][:,j]), color = col[j], label = cycle_label[j],legendfontsize = 9,
-             markersize = 3 .* decay_rate[:,j], markerstrokewidth = 0.1,markeralpha = 0.9)
-end
 
 
