@@ -75,8 +75,6 @@ end
 uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("data/",".csv")
 total_data = uu_data + us_data + lu_data + ls_data
 
-ncells, ngenes = size(us_data)
-
 n_clusters = 5
 age, age_idx, mean_age, τ_ = age_clusters(theta, n_clusters, "equidistant")
 #age_distribution = length.(age_idx)/ncells
