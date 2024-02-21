@@ -25,7 +25,7 @@ function read_all_data(dir::String,ext::String)
     return copy(uu_data), copy(us_data), copy(lu_data), copy(ls_data), cell_cycle, rfp, gfp, experiment, hcat(gene_id,gene_name)
 end
 
-function get_gene_names(id::Vector{String})
+function get_gene_names(dir::String, id::Vector{String})
     local gene_name::String
     local vec::Vector{FASTX.FASTA.Record}
     for ensembl in id
@@ -42,7 +42,7 @@ function get_gene_names(id::Vector{String})
         else
             gene_name = "nan"
         end
-        open("data/gene_names.txt", "a") do io
+        open("dir/gene_names.txt", "a") do io
            println(io, gene_name)
         end
     end
@@ -75,4 +75,11 @@ function age_clusters(theta::Vector{Float64}, n_clusters::Int64, method::String)
     end
     return clusters, cluster_idx, mean_age, τ_c
 end
+
+#edit with your personal directory:
+dir = "~/data/";
+uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data(dir,".csv");
+
+#total counts matrix:
+total_data = uu_data + us_data + lu_data + ls_data;
 
