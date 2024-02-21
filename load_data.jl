@@ -53,11 +53,7 @@ function age_clusters(theta::Vector{Float64}, n_clusters::Int64)
     for k in 0:n_clusters-1
         clusters[findall(x-> x > k/n_clusters && x <= (k+1)/n_clusters, theta)] .= k+1
     end
-    cluster_idx = Vector{Vector{Int64}}(undef, length(unique(clusters)))
-    for c in sort(unique(clusters))
-        cluster_idx[c] = findall(x->x==c, clusters)
-    end
-    return clusters, cluster_idx, τ_c
+    return clusters, τ_c
 end
 
 
