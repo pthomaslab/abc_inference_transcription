@@ -47,7 +47,7 @@ function get_gene_names(dir::String, id::Vector{String})
 end
 
 
-function age_clusters(theta::Vector{Float64}, n_clusters::Int64, method::String)
+function age_clusters(theta::Vector{Float64}, n_clusters::Int64)
     clusters = Vector{Int64}(undef, length(theta))
     τ_c::Vector{Float64} = [(2k+1)/(2*n_clusters) for k in 0:n_clusters-1]
     for k in 0:n_clusters-1
