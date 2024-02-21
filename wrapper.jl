@@ -34,12 +34,19 @@ total_data = uu_data + us_data + lu_data + ls_data;
 
 #cluster cells with respect to cell cycle position
 n_clusters = 5
-age, age_idx, τ_ = age_clusters(theta, n_clusters)
+age, τ_ = age_clusters(theta, n_clusters)
+
+# distinguishing between pulse-treated and chase-treated cells
+pulse_idx = findall(x->x>=0 && x<=6, experiment)
+chase_idx = findall(x->x>=7, experiment)
 
 #empirical distributions of cells across the 5 cell cycle stages and 11 labelling conditions
 cells_per_id = [findall(x->x==e,experiment) for e in sort(unique(experiment))[2:end-1]]
 cells_per_age = [findall(x->x==τ,age) for τ in sort(unique(age))]
 cells_age_id = [[intersect(cells_age,cells_id) for cells_age in cells_per_age] for cells_id in cells_per_id]
+
+age_dist_pulse = length.([intersect(cells,pulse_idx) for cells in cells_per_age]) ./ length(pulse_idx)
+age_dist_chase = length.([intersect(cells,chase_idx) for cells in cells_per_age]) ./ length(chase_idx)
 
 include("gene_selection.jl")
 #gene list
@@ -53,18 +60,8 @@ l_data = lu_data[:,genes] + ls_data[:,genes];
 t_data = u_data + l_data;
 
 ########## Estimate cell-specific capture efficiencies ##########
-age_dist_pulse = length.([intersect(idx,pulse_idx) for idx in age_idx]) ./ length(pulse_idx)
-age_dist_chase = length.([intersect(idx,chase_idx) for idx in age_idx]) ./ length(chase_idx)
+include("total_count_capture_efficiency.jl")
 
-mean_beta_pulse = 0.1
-ratios_pulse = [tc_pulse[i] / atc_pulse_age[age[pulse_idx[i]]] for i in 1:lastindex(pulse_idx)]
-betas_pulse = mean_beta_pulse .* ratios_pulse
+betas = estimate_betas(total_data,age,pulse_idx,chase_idx,cells_per_age)
 
-mean_beta_chase = 0.2
-ratios_chase = [tc_chase[i] / atc_chase_age[age[chase_idx[i]]] for i in 1:lastindex(chase_idx)]
-betas_chase = mean_beta_chase .* ratios_chase
-
-betas = Vector{Float64}(undef,ncells)
-betas[pulse_idx] = betas_pulse
-betas[chase_idx] = betas_chase
 
