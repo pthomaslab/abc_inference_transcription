@@ -50,28 +50,14 @@ end
 function age_clusters(theta::Vector{Float64}, n_clusters::Int64, method::String)
     clusters = Vector{Int64}(undef, length(theta))
     τ_c::Vector{Float64} = [(2k+1)/(2*n_clusters) for k in 0:n_clusters-1]
-    if method == "equidistant"
-        for k in 0:n_clusters-1
-            clusters[findall(x-> x > k/n_clusters && x <= (k+1)/n_clusters, theta)] .= k+1
-        end
-    elseif method == "equisized"
-        cells_sorted = sortperm(theta)
-        for k in 0:n_clusters-1
-            cells_idx = cells_sorted[k*542+1:(k+1)*542]
-            clusters[cells_idx] .= k+1
-        end
-        remaining_cells = cells_sorted[n_clusters*542:end]
-        clusters[remaining_cells] .= n_clusters
+    for k in 0:n_clusters-1
+        clusters[findall(x-> x > k/n_clusters && x <= (k+1)/n_clusters, theta)] .= k+1
     end
     cluster_idx = Vector{Vector{Int64}}(undef, length(unique(clusters)))
     for c in sort(unique(clusters))
         cluster_idx[c] = findall(x->x==c, clusters)
     end
-    mean_age = Vector{Float64}(undef, length(unique(clusters)))
-    for c in 1:length(cluster_idx)
-        mean_age[c] = mean(theta[cluster_idx[c]])
-    end
-    return clusters, cluster_idx, mean_age, τ_c
+    return clusters, cluster_idx, τ_c
 end
 
 
