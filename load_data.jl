@@ -49,11 +49,11 @@ end
 
 function age_clusters(theta::Vector{Float64}, n_clusters::Int64)
     clusters = Vector{Int64}(undef, length(theta))
-    τ_c::Vector{Float64} = [(2k+1)/(2*n_clusters) for k in 0:n_clusters-1]
+    τ_::Vector{Float64} = [(2k+1)/(2*n_clusters) for k in 0:n_clusters-1]
     for k in 0:n_clusters-1
         clusters[findall(x-> x > k/n_clusters && x <= (k+1)/n_clusters, theta)] .= k+1
     end
-    return clusters, τ_c
+    return clusters, τ_
 end
 
 
