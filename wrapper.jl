@@ -22,7 +22,6 @@ Plots.default(dpi = 200, size = (400,300), fg_legend = :transparent, background_
 include("load_data.jl")
 
 #load raw data
-
 dir = "~/raw_data/";  #edit with your personal directory
 uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment = read_all_data(dir,".csv");
 
@@ -36,7 +35,7 @@ total_data = uu_data + us_data + lu_data + ls_data;
 n_clusters = 5
 age, τ_ = age_clusters(theta, n_clusters)
 
-# distinguishing between pulse-treated and chase-treated cells
+#distinguishing between pulse-treated and chase-treated cells
 pulse_idx = findall(x->x>=0 && x<=6, experiment)
 chase_idx = findall(x->x>=7, experiment)
 
@@ -58,6 +57,7 @@ all_gene_names = readdlm("data/all_gene_names.txt")[:,1]
 u_data = uu_data[:,genes] + us_data[:,genes];
 l_data = lu_data[:,genes] + ls_data[:,genes];
 t_data = u_data + l_data;
+
 
 ########## Estimate cell-specific capture efficiencies ##########
 include("total_count_capture_efficiency.jl")
