@@ -4,8 +4,6 @@ function read_all_data(dir::String,ext::String)
     lu_df = CSV.read(dir*"scEU_labeled_unspliced"*ext, DataFrame)
     ls_df = CSV.read(dir*"scEU_labeled_spliced"*ext, DataFrame)
     cells_df = CSV.read(dir*"scEU_cell_cycle"*ext, DataFrame)
-    gene_id = ls_df[:,1]
-    gene_name = string.(readdlm(dir*"gene_names.txt")[:,1])
     uu_data = transpose(Matrix(select(uu_df, Not(:Gene_Id))))
     us_data = transpose(Matrix(select(us_df, Not(:Gene_Id))))
     lu_data = transpose(Matrix(select(lu_df, Not(:Gene_Id))))
@@ -22,7 +20,7 @@ function read_all_data(dir::String,ext::String)
         idx = findall(x->x==conditions[i+1], cells[2,:])
         experiment[idx] .= i
     end
-    return copy(uu_data), copy(us_data), copy(lu_data), copy(ls_data), cell_cycle, rfp, gfp, experiment, hcat(gene_id,gene_name)
+    return copy(uu_data), copy(us_data), copy(lu_data), copy(ls_data), cell_cycle, rfp, gfp, experiment
 end
 
 function get_gene_names(dir::String, id::Vector{String})
@@ -76,10 +74,4 @@ function age_clusters(theta::Vector{Float64}, n_clusters::Int64, method::String)
     return clusters, cluster_idx, mean_age, τ_c
 end
 
-#edit with your personal directory:
-dir = "~/data/";
-uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data(dir,".csv");
-
-#total counts matrix:
-total_data = uu_data + us_data + lu_data + ls_data;
 
