@@ -71,18 +71,30 @@ betas = readdlm("data/capture_efficiencies.txt")[:,1];
 ########## Compute summary statistics ##########
 include("data_summary_statistics.jl")
 
-pulse_data,pulse_se,chase_data,chase_se,ratio_data,ratio_se,mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se = load_summary_stats("data/summary_stats/",".txt");
-pulse_mean = get_mean_subset(pulse_data);
-pulse_mean_se = get_mean_subset(pulse_se);
-pulse_ff = get_ff_subset(pulse_data);
-pulse_ff_se = get_ff_subset(pulse_se);
-chase_mean = get_mean_subset(chase_data);
-chase_mean_se = get_mean_subset(chase_se);
-chase_ff = get_ff_subset(chase_data);
-chase_ff_se = get_ff_subset(chase_se);
-
+pulse_mean,pulse_ff,pulse_mean_se,pulse_ff_se,chase_mean,chase_ff,chase_mean_se,chase_ff_se,ratio_data,ratio_se,mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se = load_summary_stats("data/summary_stats/",".txt");
 
 ############################################################################################################
 # 2. Modelling and ABC simulations
+
+# m: modelling hypothesis index  --> {1: constant rates - scaling with size
+#                                     2: constant rates - non-scaling
+#                                     3: cell cycle-dependent burst frequency - scaling with size
+#                                     4: cell cycle-dependent burst size - scaling with size
+#                                     5: cell cycle-dependent decay rate - scaling with size }
+#                                       
+ 
+#choose model index to simulate
+m = 1   #2, 3, 4, 5
+#select number of simulations in current run
+n_trials = 250000
+#submit simulations locally or on high-performance computing cluster (can submit multiple simulation runs)
+submit = 1
+
+include("abc_simulation.jl")
+
+############################################################################################################
+# 3. Parameter inference and model selection
+
+
 
 
