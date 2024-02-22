@@ -1,19 +1,3 @@
-function get_mean_subset(data::Matrix{Float64})
-    sub = Matrix{Float64}(undef,(Int64(size(data)[1]/2),size(data)[2]))
-    for i in 1:size(sub)[1]
-        sub[i,:] = data[2*i-1,:]
-    end
-    return sub
-end
-
-function get_ff_subset(data::Matrix{Float64})
-    sub = Matrix{Float64}(undef,(Int64(size(data)[1]/2),size(data)[2]))
-    for i in 1:size(sub)[1]
-        sub[i,:] = data[2*i,:]
-    end
-    return sub
-end
-
 ########################  1st-2nd order moments  ########################
 function get_mean_ccp_data(arr::Vector{Float64}, n_clusters::Int64, age_clusters::Vector{Int64})
     m = Vector{Float64}(undef,n_clusters)
@@ -50,7 +34,7 @@ end
 function get_ccp_data(data::Vector{Float64}, n_clusters::Int64, age_clusters::Vector{Int64})
     mean_data::Vector{Float64} = get_mean_ccp_data(data, n_clusters, age_clusters)
     ff_data::Vector{Float64} = get_ff_ccp_data(data, n_clusters, age_clusters)
-    return hcat(mean_data, ff_data)
+    return mean_data, ff_data
 end
 
 function get_ccp_se(data::Vector{Float64}, n_clusters::Int64, age_clusters::Vector{Int64})
@@ -70,7 +54,7 @@ function get_ccp_se(data::Vector{Float64}, n_clusters::Int64, age_clusters::Vect
         mean_se[i] = sqrt((1 / (n_bootstraps - 1)) * sum((stats_mean[i,:] .- mean(stats_mean[i,:])).^2))
         ff_se[i] = sqrt((1 / (n_bootstraps - 1)) * sum((stats_ff[i,:] .- mean(stats_ff[i,:])).^2))
     end
-    return hcat(mean_se, ff_se)
+    return mean_se, ff_se
 end
 
 ########################  ratios  ########################
@@ -198,47 +182,59 @@ end
 
 function get_summary_stats(u_data::Vector{Float64}, l_data::Vector{Float64}, n_clusters::Int64, age_clusters::Vector{Int64}, experiment::Vector{Int64}, 
             cond_vec::Vector{Int64}, pulse_idx::Vector{Int64}, chase_idx::Vector{Int64}, age_id_dist::Matrix{Float64})
-    pulse_data::Matrix{Float64} = get_ccp_data(u_data[pulse_idx]+l_data[pulse_idx],n_clusters,age_clusters[pulse_idx])
-    pulse_se::Matrix{Float64} = get_ccp_se(u_data[pulse_idx]+l_data[pulse_idx],n_clusters,age_clusters[pulse_idx])
-    chase_data::Matrix{Float64} = get_ccp_data(u_data[chase_idx]+l_data[chase_idx],n_clusters,age_clusters[chase_idx])
-    chase_se::Matrix{Float64} = get_ccp_se(u_data[chase_idx]+l_data[chase_idx],n_clusters,age_clusters[chase_idx])
+    pulse_mean::Vector{Float64},pulse_ff::Vector{Float64} = get_ccp_data(u_data[pulse_idx]+l_data[pulse_idx],n_clusters,age_clusters[pulse_idx])
+    pulse_mean_se::Vector{Float64},pulse_ff_se::Vector{Float64} = get_ccp_se(u_data[pulse_idx]+l_data[pulse_idx],n_clusters,age_clusters[pulse_idx])
+    chase_mean::Vector{Float64},chase_ff::Vector{Float64} = get_ccp_data(u_data[chase_idx]+l_data[chase_idx],n_clusters,age_clusters[chase_idx])
+    chase_mean_se::Vector{Float64},chase_ff_se::Vector{Float64} = get_ccp_se(u_data[chase_idx]+l_data[chase_idx],n_clusters,age_clusters[chase_idx])
     ratio_data::Vector{Float64} = get_ratios(u_data,l_data,experiment,cond_vec)
     ratio_se::Vector{Float64} = get_ratio_se(u_data,l_data,experiment,cond_vec)
     mean_corr_data::Vector{Float64},corr_mean_data::Vector{Float64} = get_correlations(u_data,l_data,n_clusters,age_clusters,experiment,cond_vec,age_id_dist)
     mean_corr_se::Vector{Float64},corr_mean_se::Vector{Float64} = get_correlation_se(u_data,l_data,n_clusters,age_clusters,experiment,cond_vec)
-    return pulse_data,pulse_se,chase_data,chase_se,ratio_data,ratio_se,mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se
+    return pulse_mean,pulse_ff,pulse_mean_se,pulse_ff_se,chase_mean,chase_ff,chase_mean_se,chase_ff_se,ratio_data,ratio_se,mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se
 end
 
 for g in 1:length(genes)
-    p_data,p_se,c_data,c_se,r_data,r_se,mc_data,mc_se,cm_data,cm_se = get_summary_stats(u_data[:,g],l_data[:,g],n_clusters,age,experiment,cond_vec,pulse_idx,chase_idx,age_id_distribution)
-    open("data/summary_stats/pulse_data.txt", "a") do io
-        writedlm(io, transpose(p_data))
+    p_m,p_ff,p_m_se,p_ff_se,c_m,c_ff,c_m_se,c_ff_se,r_data,r_se,mc_data,mc_se,cm_data,cm_se = get_summary_stats(u_data[:,g],l_data[:,g],n_clusters,age,experiment,cond_vec,pulse_idx,chase_idx,age_id_distribution)
+    open("data/summary_stats/pulse_mean.txt", "a") do io
+        writedlm(io, reshape(p_m,1,:))
+    end
+    open("data/summary_stats/pulse_ff.txt", "a") do io
+        writedlm(io, reshape(p_ff,1,:))
     end 
-    open("data/summary_stats/pulse_se.txt", "a") do io
-        writedlm(io, transpose(p_se))
+    open("data/summary_stats/pulse_mean_se.txt", "a") do io
+        writedlm(io, reshape(p_m_se,1,:))
     end
-    open("data/summary_stats/chase_data.txt", "a") do io
-        writedlm(io, transpose(c_data))
+    open("data/summary_stats/pulse_ff_se.txt", "a") do io
+        writedlm(io, reshape(p_ff_se,1,:))
     end
-    open("data/summary_stats/chase_se.txt", "a") do io
-        writedlm(io, transpose(c_se))
+    open("data/summary_stats/chase_mean.txt", "a") do io
+        writedlm(io, reshape(c_m,1,:))
+    end
+    open("data/summary_stats/chase_ff.txt", "a") do io
+        writedlm(io, reshape(c_ff,1,:))
+    end 
+    open("data/summary_stats/chase_mean_se.txt", "a") do io
+        writedlm(io, reshape(c_m_se,1,:))
+    end
+    open("data/summary_stats/chase_ff_se.txt", "a") do io
+        writedlm(io, reshape(c_ff_se,1,:))
     end
     open("data/summary_stats/ratio_data.txt", "a") do io
-        writedlm(io, transpose(r_data))
+        writedlm(io, reshape(r_data,1,:))
     end
     open("data/summary_stats/ratio_se.txt", "a") do io
-        writedlm(io, transpose(r_se))
+        writedlm(io, reshape(r_se,1,:))
     end
     open("data/summary_stats/mean_corr_data.txt", "a") do io
-        writedlm(io, transpose(mc_data))
+        writedlm(io, reshape(mc_data,1,:))
     end
     open("data/summary_stats/mean_corr_se.txt", "a") do io
-        writedlm(io, transpose(mc_se))
+        writedlm(io, reshape(mc_se,1,:))
     end
     open("data/summary_stats/corr_mean_data.txt", "a") do io
-        writedlm(io, transpose(cm_data))
+        writedlm(io, reshape(cm_data,1,:))
     end
     open("data/summary_stats/corr_mean_se.txt", "a") do io
-        writedlm(io, transpose(cm_se))
+        writedlm(io, reshape(cm_se,1,:))
     end
 end
