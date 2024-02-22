@@ -27,6 +27,8 @@ end
 
 betas = estimate_betas(total_data,age,pulse_idx,chase_idx,cells_per_age)
 
+writedlm("data/capture_efficiencies.txt", betas)
+
 #=
 #cell size 
 s = sum(total_data,dims=2)[:,1];
