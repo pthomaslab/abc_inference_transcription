@@ -17,12 +17,17 @@ The original scEU-seq data that we analyse were generated and published by the a
 We also suggest that you download the contents of the folder `data` of this repository as it contains other necessary datasets. 
 
 #### Load required packages and raw data
-This script loads all the required packages for all downstream tasks. After you have obtained the CSV files, you can load the raw data for pre-processing. 
+The script first loads all the required packages for all downstream tasks. Next all the raw data are loaded, including: the unlabelled/labelled-unspliced/spliced mRNA count matrices `uu_data`,`us_data`,`lu_data`,`ls_data`, the cell-specific coordinates along cell cycle progression `theta`, the single-cell fluorescence levels of the cell cycle reporters Cdt1-RFP and Geminin-GFP `rfp`,`gfp`, as well as the pulse/chase labelling conditions of each cell `experiment`. Then, the 4 measurements are summed up to obtain the total mRNA count matrix `total_data`.
 
 #### Pre-process data
+The cells are clustered into 5 cell cycle stages (age groups), encoded by the vector `age`. In addition, pulse-treated and chase-treated cells are separated into `pulse_idx` and `chase_idx`. Next, all useful empirical frequencies/distributions of cells across cell cycle stages and labelling conditions are computed. 
 
+We next proceed with gene filtering and we load the list of selected genes `genes` that we use in all downstream analyses. 
 
 #### Estimate cell-specific capture efficiencies
+We next estimate cell-specific capture efficiencies from the data, using the each cell's total count and cell cycle stage.
+
+#### Compute summary statistics
 
 
 ### 2. Modelling and ABC simulations
