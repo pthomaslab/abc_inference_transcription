@@ -24,6 +24,10 @@ function estimate_betas(total_data::Matrix{Float64}, age::Vector{Float64}, pulse
     return betas
 end
 
+
+betas = estimate_betas(total_data,age,pulse_idx,chase_idx,cells_per_age)
+
+#=
 #cell size 
 s = sum(total_data,dims=2)[:,1];
 
@@ -93,20 +97,4 @@ p = plot!(trend_pulse, x_ticks = ([1:5;],cycle_label),color = :lightcyan, marker
 p = plot!(trend_chase, x_ticks = ([1:5;],cycle_label),color = :mediumpurple4, linealpha = 0.8, markersize = 5, markerstrokewidth = 4,marker = :circle,label = false, linewidth = 4)
 
 savefig(p,"paper_figures/size_ccp_distributions.pdf")
-
-
-
-
-
-
-
-#=
-#cartoons
-p = scatter([1:2;],[1:2;],xlims=(3,4),ylims=(3,4),yaxis=nothing,xaxis=nothing, label = "true transcript levels", color = :steelblue, ylabel="labelled",xlabel="unlabelled", 
-            title = "gene X", left_margin=5mm, size=(500,400),legend = :bottomright,legendfontsize = 11,fg_legend = :transparent)
-savefig(p,"cartoon_scatter_u_vs_l_true.svg")
-
-p = scatter!([1:2;],[1:2;],xlims=(3,4),ylims=(3,4),yaxis=nothing,xaxis=nothing, label = "observed transcript levels", color = :skyblue, ylabel="labelled",xlabel="unlabelled", 
-            title = "gene X", left_margin=5mm, size=(500,400),legend = :bottomright, legendfontsize = 11,fg_legend = :transparent)
-savefig(p,"cartoon_scatter_u_vs_l_observed.svg")
 =#
