@@ -65,20 +65,12 @@ end
 
 ################################################################################################################
 
-# m: modelling hypothesis index  --> {1: constant rates - scaling with size
-#                                     2: constant rates - non-scaling
-#                                     3: varying burst frequency - scaling with size
-#                                     4: varying burst size - scaling with size
-#                                     5: varying decay rate - scaling with size }
-#                                       
- 
-
 m = 1   #2, 3, 4, 5
 
 model_name = ["const","const_const","kon","alpha","gamma"][m]
 
 #load model outputs
-s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean = load_s_data("data/large_scale_simulations/simulations_1/",model_name,".txt")
+s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean = load_s_data("data/simulations/",model_name,".txt")
 
 #load data summary statistics
 pulse_data,pulse_se,chase_data,chase_se,ratio_data,ratio_se,
