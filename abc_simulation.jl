@@ -1,13 +1,3 @@
-using DifferentialEquations
-using Sundials
-using DelimitedFiles
-using CSV
-using DataFrames
-using Statistics
-using Distributions
-
-
-include("load_data.jl")
 include("model.jl")
 
 function fix_params(vary_map::Vector{Any}, N::Int64)
@@ -54,68 +44,29 @@ function abc_sim(θ::Vector{Float64}, iv::Vector{Float64}, agevec::Vector{Float6
             s_chase[:,2] = (s[:,3] + 2*s[:,4] + s[:,5]) ./ (s[:,1] + s[:,2] + ε)
         end
     end
-    open("Julia/new_simulations/"*rate_name*"/s_pulse_"*rate_name*"_$n.txt", "a") do io
+    open("data/simulations/"*rate_name*"/s_pulse_"*rate_name*"_$n.txt", "a") do io
         writedlm(io, transpose(s_pulse))
     end
-    open("Julia/new_simulations/"*rate_name*"/s_chase_"*rate_name*"_$n.txt", "a") do io
+    open("data/simulations/"*rate_name*"/s_chase_"*rate_name*"_$n.txt", "a") do io
         writedlm(io, transpose(s_chase))
     end
-    open("Julia/new_simulations/"*rate_name*"/s_ratios_"*rate_name*"_$n.txt", "a") do io
+    open("data/simulations/"*rate_name*"/s_ratios_"*rate_name*"_$n.txt", "a") do io
         writedlm(io, transpose(s_ratios))
     end
-    open("Julia/new_simulations/"*rate_name*"/s_mean_corr_"*rate_name*"_$n.txt", "a") do io
+    open("data/simulations/"*rate_name*"/s_mean_corr_"*rate_name*"_$n.txt", "a") do io
         writedlm(io, transpose(s_mean_corr))
     end
-    open("Julia/new_simulations/"*rate_name*"/s_corr_mean_"*rate_name*"_$n.txt", "a") do io
+    open("data/simulations/"*rate_name*"/s_corr_mean_"*rate_name*"_$n.txt", "a") do io
         writedlm(io, transpose(s_corr_mean))
     end
 end
 
-
-uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("data/",".csv")
-total_data = uu_data + us_data + lu_data + ls_data
-
-n_clusters = 5
-age, age_idx, mean_age, τ_ = age_clusters(theta, n_clusters, "equidistant")
-#age_distribution = length.(age_idx)/ncells
-
-cells_per_age = [findall(x->x==τ,age) for τ in sort(unique(age))]
-cells_per_id = [findall(x->x==e,experiment) for e in sort(unique(experiment))[2:end-1]]
-cells_age_id = [[intersect(cells_age,cells_id) for cells_age in cells_per_age] for cells_id in cells_per_id]
-
-age_id_distribution = hcat([length.(cells) / sum(length.(cells)) for cells in cells_age_id]...)
-
-
-pulse_idx = findall(x->x<=6, experiment)
-tc_pulse = sum(total_data[pulse_idx,:],dims=2)[:,1]
-tc_pulse_age = [sum(total_data[intersect(cells,pulse_idx),:],dims=2)[:,1] for cells in cells_per_age]
-atc_pulse_age = mean.(tc_pulse_age)
-
-chase_idx = findall(x->x>=7, experiment)
-tc_chase = sum(total_data[chase_idx,:],dims=2)[:,1]
-tc_chase_age = [sum(total_data[intersect(cells,chase_idx),:],dims=2)[:,1] for cells in cells_per_age]
-atc_chase_age = mean.(tc_chase_age)
-
-mean_beta_pulse = 0.1
-ratios_pulse = [tc_pulse[i] / atc_pulse_age[age[pulse_idx[i]]] for i in 1:lastindex(pulse_idx)]
-betas_pulse = mean_beta_pulse .* ratios_pulse
-
-mean_beta_chase = 0.2
-ratios_chase = [tc_chase[i] / atc_chase_age[age[chase_idx[i]]] for i in 1:lastindex(chase_idx)]
-betas_chase = mean_beta_chase .* ratios_chase
-
-betas = Vector{Float64}(undef,ncells)
-betas[pulse_idx] = betas_pulse
-betas[chase_idx] = betas_chase
-
-
-#matrix of experimental conditions: 1st col. - pulse, 2nd col. - chase
+#experimental conditions: 1st column - pulse, 2nd column - chase
 condition_id = hcat([1/4,1/2,3/4,1,2,3,22,22,22,22,22], [0,0,0,0,0,0,0,1,2,4,6])
 cond_idx = [1:11;]
 
-##################################################################################################
-#####################################  model configuration #######################################
-##################################################################################################
+
+# model configuration 
 iv = zeros(9)   
 iv[2] = 1/2
 cycle = 20.0
@@ -124,35 +75,22 @@ agevec = τ_ .* cycle
 pulsevec = condition_id[cond_idx,1]
 chasevec = condition_id[cond_idx,2]      
 
+# add technical noise to the output of the model
 downsampling = true
 
 ###################################################################################################
-# m: modelling hypothesis index  --> {1: constant rates - scaling with size
-#                                     2: constant rates - non-scaling
-#                                     3: varying burst frequency - scaling with size
-#                                     4: varying burst size - scaling with size
-#                                     5: varying decay rate - scaling with size }
-#                                       
- 
-
-m = 1   #2, 3, 4, 5
 model_name = ["const","const_const","kon","alpha","gamma"][m]
 vary_flag = [[0,0,0,0],[0,0,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]][m]
 vary_map = get_vary_map(vary_flag,n_clusters)
 scaling = 1 * (!=(m,2))
 
-#number of simulations in current run
-n_trials = 250000
-
-#submit file on high-performance computing cluster
-submit = 1
 
 @time for i in 1:n_trials
-    open("Julia/simulations/"*model_name*"/progress_"*model_name*"_$submit.txt", "a") do io
+    open("data/simulations/"*model_name*"/progress_"*model_name*"_$submit.txt", "a") do io
         writedlm(io, i)
     end
     θ = fix_params(vary_map,1)
-    open("Julia/simulations/"*model_name*"/sets_"*model_name*"_$submit.txt", "a") do io
+    open("data/simulations/"*model_name*"/sets_"*model_name*"_$submit.txt", "a") do io
         writedlm(io, θ)
     end
     abc_sim(θ[1,:],iv,agevec,cycle,pulsevec,chasevec,t0,vary_map,scaling,n_clusters,downsampling,betas,age,pulse_idx,chase_idx,age_id_distribution,model_name,submit)
