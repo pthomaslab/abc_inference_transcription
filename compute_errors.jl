@@ -1,12 +1,3 @@
-function load_s_data(path::String, model_name::String, ext::String)
-    s_pulse::Matrix{Float64} = readdlm(path*model_name*"/s_pulse_"*model_name*ext)
-    s_chase::Matrix{Float64} = readdlm(path*model_name*"/s_chase_"*model_name*ext)
-    s_ratios::Matrix{Float64} = readdlm(path*model_name*"/s_ratios_"*model_name*ext)
-    s_mean_corr::Matrix{Float64} = readdlm(path*model_name*"/s_mean_corr_"*model_name*ext)
-    s_corr_mean::Matrix{Float64} = readdlm(path*model_name*"/s_corr_mean_"*model_name*ext)
-    return s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean
-end
-
 function get_mean_subset(data::Matrix{Float64})
     sub = Matrix{Float64}(undef,(Int64(size(data)[1]/2),size(data)[2]))
     for i in 1:size(sub)[1]
@@ -21,6 +12,19 @@ function get_ff_subset(data::Matrix{Float64})
         sub[i,:] = data[2*i,:]
     end
     return sub
+end
+    
+function load_s_data(path::String, model_name::String, ext::String)
+    s_pulse::Matrix{Float64} = readdlm(path*model_name*"/s_pulse_"*model_name*ext)
+    s_chase::Matrix{Float64} = readdlm(path*model_name*"/s_chase_"*model_name*ext)
+    s_pulse_mean = get_mean_subset(s_pulse)
+    s_pulse_ff = get_ff_subset(s_pulse)
+    s_chase_mean = get_mean_subset(s_chase)
+    s_chase_ff = get_ff_subset(s_chase)
+    s_ratios::Matrix{Float64} = readdlm(path*model_name*"/s_ratios_"*model_name*ext)
+    s_mean_corr::Matrix{Float64} = readdlm(path*model_name*"/s_mean_corr_"*model_name*ext)
+    s_corr_mean::Matrix{Float64} = readdlm(path*model_name*"/s_corr_mean_"*model_name*ext)
+    return s_pulse_mean,s_pulse_ff,s_chase_mean,s_chase_ff,s_ratios,s_mean_corr,s_corr_mean
 end
 
 function nlsqerror_part(data::Vector{Float64},se::Vector{Float64},s_data::Vector{Float64},n_summary_stats::Int64)::Float64
@@ -38,18 +42,19 @@ function nlsqerror_part(data::Vector{Float64},se::Vector{Float64},s_data::Vector
     return err / n_summary_stats
 end
 
-function compute_trunc_errors(pulse_data::Matrix{Float64}, pulse_se::Matrix{Float64}, chase_data::Matrix{Float64}, chase_se::Matrix{Float64},
-    ratio_data::Matrix{Float64}, ratio_se::Matrix{Float64}, mean_corr_data::Matrix{Float64}, mean_corr_se::Matrix{Float64}, 
-    corr_mean_data::Matrix{Float64}, corr_mean_se::Matrix{Float64}, s_pulse::Matrix{Float64}, s_chase::Matrix{Float64}, 
-    s_ratios::Matrix{Float64}, s_mean_corr::Matrix{Float64}, s_corr_mean::Matrix{Float64}, model_name::String)
+function compute_trunc_errors(pulse_mean::Matrix{Float64},pulse_mean_se::Matrix{Float64},pulse_ff::Matrix{Float64},pulse_ff_se::Matrix{Float64},
+    chase_mean::Matrix{Float64},chase_mean_se::Matrix{Float64},chase_ff::Matrix{Float64},chase_ff_se::Matrix{Float64},
+    ratio_data::Matrix{Float64},ratio_se::Matrix{Float64},mean_corr_data::Matrix{Float64},mean_corr_se::Matrix{Float64}, 
+    corr_mean_data::Matrix{Float64},corr_mean_se::Matrix{Float64},s_pulse_mean::Matrix{Float64},s_pulse_ff::Matrix{Float64},
+    s_chase_mean::Matrix{Float64},s_chase_ff::Matrix{Float64},s_ratios::Matrix{Float64},s_mean_corr::Matrix{Float64},s_corr_mean::Matrix{Float64},model_name::String)
     local io::IOStream
     n_summary_stats::Int64 = 4*size(pulse_data)[2] + 3*size(ratio_data)[2]
     for i in 1:size(s_ratios)[1]
         err = Vector{Float64}(undef,size(ratio_data)[1])
         for j in 1:size(ratio_data)[1]
-            data_::Vector{Array{Float64}} = [pulse_data[j*2-1,:],pulse_data[j*2,:],chase_data[j*2-1,:],chase_data[j*2,:],ratio_data[j,:],mean_corr_data[j,:],corr_mean_data[j,:]]
-            se_::Vector{Array{Float64}} = [pulse_se[j*2-1,:],pulse_se[j*2,:],chase_se[j*2-1,:],chase_se[j*2,:],ratio_se[j,:],mean_corr_se[j,:],corr_mean_se[j,:]]
-            s_data_::Vector{Array{Float64}} = [s_pulse[i*2-1,:],s_pulse[i*2,:],s_chase[i*2-1,:],s_chase[i*2,:],s_ratios[i,:],s_mean_corr[i,:],s_corr_mean[i,:]]
+            data_::Vector{Array{Float64}} = [pulse_mean[j,:],pulse_ff[j,:],chase_mean[j,:],chase_ff[j,:],ratio_data[j,:],mean_corr_data[j,:],corr_mean_data[j,:]]
+            se_::Vector{Array{Float64}} = [pulse_mean_se[j,:],pulse_ff_se[j,:],chase_mean_se[j,:],chase_ff_se[j,:],ratio_se[j,:],mean_corr_se[j,:],corr_mean_se[j,:]]
+            s_data_::Vector{Array{Float64}} = [s_pulse_mean[i,:],s_pulse_ff[i,:],s_chase_mean[i,:],s_chase_ff[i,:],s_ratios[i,:],s_mean_corr[i,:],s_corr_mean[i,:]]
             err[j] = 0.0
             for l in 1:7
                 err[j] += nlsqerror_part(data_[l],se_[l],s_data_[l],n_summary_stats)
@@ -66,8 +71,8 @@ end
 
 ################################################################################################################
 
-@time (compute_trunc_errors(pulse_mean,pulse_ff,pulse_mean_se,pulse_ff_se,chase_mean,chase_ff,chase_mean_se,chase_ff_se,ratio_data,ratio_se,
-        mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se,s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean,model_name));
+@time (compute_trunc_errors(pulse_mean,pulse_mean_se,pulse_ff,pulse_ff_se,chase_mean,chase_mean_se,chase_ff,chase_ff_se,ratio_data,ratio_se,
+    mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se,s_pulse_mean,s_pulse_ff,s_chase_mean,s_chase_ff,s_ratios,s_mean_corr,s_corr_mean,model_name));
 
 
 
