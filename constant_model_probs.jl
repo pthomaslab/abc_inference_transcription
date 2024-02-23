@@ -1,9 +1,3 @@
-using DelimitedFiles
-using DataFrames
-using Statistics
-using JDF
-using Distributions
-
 function get_model_probs(err::Matrix{Float64},ε::Float64)
     stats = Vector{Float64}(undef, 100)
     alpha::Float64 = 0.95
@@ -42,7 +36,7 @@ f_2 = JDFFile("data/large_scale_simulations/errors/error_const_const.jdf")
 ε = 4.8
 
 
-for g in 1:3419
+for g in 1:length(genes)
     err_mat = Matrix{Float64}(undef,(1000000,2))
     err_mat[:,1] = f_1["x"*string(g)]  
     err_mat[:,2] = f_2["x"*string(g)] 
