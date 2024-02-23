@@ -25,14 +25,16 @@ The cells are clustered into 5 cell cycle stages (age groups), encoded by the ve
 We next proceed with gene filtering and we load the list of selected genes `genes` that we use in all downstream analyses. 
 
 #### Estimate cell-specific capture efficiencies
-We next estimate cell-specific capture efficiencies from the data, using the each cell's total count and cell cycle stage.
+We next estimate cell-specific capture efficiencies from the data, using each cell's total count and cell cycle stage. 
 
 #### Compute summary statistics
-
+After pre-processing the data, we proceed with computing all summary statistics that we will need for inference. We obtain the matrices `pulse_mean`,`pulse_ff`,`chase_mean`,`chase_ff`,`ratio_data`,`mean_corr_data`,`corr_mean_data`, as well as the estimates for the standard error of these statistics, `pulse_mean_se`,`pulse_ff_se`,`chase_mean_se`,`chase_ff_se`,`ratio_data_se`,`mean_corr_data_se`,`corr_mean_data_se`, computed using bootstrapping.
 
 ### 2. Modelling and ABC simulations
+We next set-up the ABC framework. We sample $M = 5 \cdot 10^6$ parameter sets from our prior distribution and numerically simulate our $5$ models (constant scaling, constant non-scaling, burst frequency, burst size and decay rate). We use our estimated capture efficiencies to add technical noise to the output of our models and then we generate summary statistics. We select which of the $5$ models to simulate (model index `m` $=1, \dots ,5$), the number of simulations `n_trials` to run (sampled parameter sets).
 
 ### 3. Parameter inference and model selection
+After collecting the completed simulations, we proceed with comparing summary statistics of model and data through the ABC rejection scheme.
 
 ### 4. Transcription kinetics analysis and noise decomposition
 
