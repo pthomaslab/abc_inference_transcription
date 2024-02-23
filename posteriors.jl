@@ -1,66 +1,3 @@
-function load_summary_stats(path::String,ext::String)
-    pulse_data::Matrix{Float64} = readdlm(path*"pulse_data"*ext)
-    pulse_se::Matrix{Float64} = readdlm(path*"pulse_se"*ext)
-    chase_data::Matrix{Float64} = readdlm(path*"chase_data"*ext)
-    chase_se::Matrix{Float64} = readdlm(path*"chase_se"*ext)
-    ratio_data::Matrix{Float64} = readdlm(path*"ratio_data"*ext)
-    ratio_se::Matrix{Float64} = readdlm(path*"ratio_se"*ext)
-    mean_corr_data::Matrix{Float64} = readdlm(path*"mean_corr_data"*ext)
-    mean_corr_se::Matrix{Float64} = readdlm(path*"mean_corr_se"*ext)
-    corr_mean_data::Matrix{Float64} = readdlm(path*"corr_mean_data"*ext)
-    corr_mean_se::Matrix{Float64} = readdlm(path*"corr_mean_se"*ext)
-    return pulse_data,pulse_se,chase_data,chase_se,ratio_data,ratio_se,mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se
-end
-
-function get_subset(data::Matrix{Float64},idx::Vector{Int64})
-    sub = Matrix{Float64}(undef,(length(idx)*2,size(data)[2]))
-    for (i,k) in enumerate(idx)
-        sub[2*i-1:2*i,:] = data[2*k-1:2*k,:]
-    end
-    return sub
-end
-
-function get_mean_subset(data::Matrix{Float64})
-    sub = Matrix{Float64}(undef,(Int64(size(data)[1]/2),size(data)[2]))
-    for i in 1:size(sub)[1]
-        sub[i,:] = data[2*i-1,:]
-    end
-    return sub
-end
-
-function get_ff_subset(data::Matrix{Float64})
-    sub = Matrix{Float64}(undef,(Int64(size(data)[1]/2),size(data)[2]))
-    for i in 1:size(sub)[1]
-        sub[i,:] = data[2*i,:]
-    end
-    return sub
-end
-
-
-function load_all_s_data(path::String, model_idx::Int64)
-    n::Int64 = 10^6;
-    model_name::String = ["const","const_const","kon","alpha","gamma"][model_idx]
-    s_pulse = Matrix{Float64}(undef,(4*n,5))
-    s_chase = Matrix{Float64}(undef,(4*n,5))
-    s_ratios = Matrix{Float64}(undef,(2*n,11))
-    s_mean_corr = Matrix{Float64}(undef,(2*n,11))
-    s_corr_mean = Matrix{Float64}(undef,(2*n,11))
-    if model_idx <= 2
-        sets = Matrix{Float64}(undef,(2*n,5))
-    else
-        sets = Matrix{Float64}(undef,(2*n,9))
-    end
-    for i in 1:2
-        s_pulse[2*n*(i-1)+1:2*n*i,:] = readdlm(path*"/simulations_$i/"*model_name*"/s_pulse_"*model_name*".txt")
-        s_chase[2*n*(i-1)+1:2*n*i,:] = readdlm(path*"/simulations_$i/"*model_name*"/s_chase_"*model_name*".txt")
-        s_ratios[n*(i-1)+1:n*i,:] = readdlm(path*"/simulations_$i/"*model_name*"/s_ratios_"*model_name*".txt")
-        s_mean_corr[n*(i-1)+1:n*i,:] = readdlm(path*"/simulations_$i/"*model_name*"/s_mean_corr_"*model_name*".txt")
-        s_corr_mean[n*(i-1)+1:n*i,:] = readdlm(path*"/simulations_$i/"*model_name*"/s_corr_mean_"*model_name*".txt")
-        sets[n*(i-1)+1:n*i,:] = readdlm(path*"/simulations_$i/"*model_name*"/sets_"*model_name*".txt")
-    end
-    return s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean,sets
-end
-
 function load_s_data(path::String, model_idx::Int64, n_sims::Int64, data_idx::Vector{Int64})
     n::Int64 = 10^6;
     model_name::String = ["const","const_const","kon","alpha","gamma"][model_idx]
@@ -94,16 +31,6 @@ function load_param_sets(path::String, model_idx::Int64, n_groups::Int64)
     end
     return sets
 end
-
-function get_n_particles(posterior::Vector{Vector{Vector{Int64}}})
-    n_particles::Vector{Vector{Int64}} = [length.(p) for p in posterior]
-    for (i,p_) in enumerate(posterior)
-        zeros_ = findall(x->x==[0],p_)
-        n_particles[i][zeros_] .= 0
-    end
-    return n_particles
-end
-
 
 function filter_quantiles(data::AbstractArray{Float64},q::Float64)
     sel = Vector{Vector}(undef,size(data)[2])
@@ -278,84 +205,12 @@ function plot_fits(data::Matrix{Float64}, data_se::Matrix{Float64}, s_mean::Matr
 end
 
 
-
-#################################################################################################
-#################################################################################################
-#################################################################################################
-
-all_genes = Int64.(readdlm("data/selected_genes.txt")[:,1])
-gene_id = readdlm("data/all_gene_ids.txt")[:,1]
-all_gene_names = readdlm("data/all_gene_names.txt")[:,1]
-genes = all_genes[Int64.(readdlm("data/selected_genes_main_subset.txt")[:,1])]
-ids = gene_id[genes];
-gene_names = replace(all_gene_names[genes], NaN => "NaN")
-
-
-pulse_data,pulse_se,chase_data,chase_se,ratio_data,ratio_se,
-mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se = load_summary_stats("data/selected_summary_stats/", ".txt");
-
-pulse_mean = get_mean_subset(pulse_data)
-pulse_mean_se = get_mean_subset(pulse_se)
-pulse_ff = get_ff_subset(pulse_data)
-pulse_ff_se = get_ff_subset(pulse_se)
-chase_mean = get_mean_subset(chase_data)
-chase_mean_se = get_mean_subset(chase_se)
-chase_ff = get_ff_subset(chase_data)
-chase_ff_se = get_ff_subset(chase_se)
-
-
-
-uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("data/",".csv");
-total_data = uu_data + us_data + lu_data + ls_data;
-ncells,ngenes = size(ls_data);
-pulse_idx = findall(x->x<=6, experiment)
-
-chase_idx = findall(x->x>=7, experiment)
-n_clusters = 5
-age, cluster_idx, mean_age, τ_ = age_clusters(theta, n_clusters, "equidistant")
-age_distribution = length.(cluster_idx)/ncells;
-
-u_data = uu_data[:,genes] + us_data[:,genes];
-l_data = lu_data[:,genes] + ls_data[:,genes];
-
-t_data = u_data + l_data;
-
-cells_per_id = [findall(x->x==e,experiment) for e in sort(unique(experiment))[2:end-1]]
-cells_per_age = [findall(x->x==τ,age) for τ in sort(unique(age))]
-cells_age_id = [[intersect(cells_age,cells_id) for cells_age in cells_per_age] for cells_id in cells_per_id]
-
 mean_data = hcat([mean(t_data[cells,:], dims = 1)[1,:] for cells in cells_per_age]...)
 var_data = hcat([var(t_data[cells,:], dims = 1)[1,:] for cells in cells_per_age]...);
 
-#################### load gene-specific kinetics posterior distributions for each gene model ####################
-model_names = ["const","const_const","kon","alpha","gamma"];     
-posterior = Vector{Vector{Vector{Int64}}}(undef,length(model_names))
-for (i,name) in enumerate(model_names)
-    file = open("data/posteriors/particles_"*name*".txt", "r")
-    posterior[i] = Vector{Vector{Int64}}(undef,length(genes))
-    for (j,line) in enumerate(eachline(file))
-        posterior[i][j] = parse.(Int64,split(line,"\t")) ## or whatever else you want to do with the line.
-    end
-    close(file)
-end  
-
-n_particles_model = get_n_particles(posterior)
-n_particles_mat = hcat(n_particles_model...)
-n_particles = sum(n_particles_mat, dims=2)[:,1]
-
-   
-errs = Vector{Vector{Vector{Float64}}}(undef,length(model_names));
-for (i,name) in enumerate(model_names)
-    file = open("data/posteriors/$ε/errors_"*name*".txt", "r")
-    errs[i] = Vector{Vector{Float64}}(undef,length(genes))
-    for (j,line) in enumerate(eachline(file))
-        errs[i][j] = parse.(Float64,split(line,"\t")) ## or whatever else you want to do with the line.
-    end
-    close(file)
-end  
-
-n_groups_sims = 1
-sets = [load_param_sets("data/large_scale_simulations/",m,n_groups_sims) for m in 1:5]
+#load all sampled parameter sets
+n_groups_sims = 1;
+sets = [load_param_sets("data/large_scale_simulations/",m,n_groups_sims) for m in 1:5];
 
 
 # for each gene, get  the best performing particle per model
