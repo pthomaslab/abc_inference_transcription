@@ -95,6 +95,14 @@ include("abc_simulation.jl")
 ############################################################################################################
 # 3. Parameter inference and model selection
 
+#choose model index to compare with data
+m = 1  #2, 3, 4, 5
+model_name = ["const","const_const","kon","alpha","gamma"][m]
+
+#load model-generated summary statistics
+s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean = load_s_data("data/simulations/",model_name,".txt")
+
+
 
 
 
