@@ -1,18 +1,3 @@
-using DelimitedFiles
-using CSV
-using DataFrames
-using Statistics
-using Distributions
-using CSV
-using Plots
-using Plots.PlotMeasures
-using Colors
-using StatsPlots
-using StatsBase
-
-include("load_data.jl")
-include("model.jl")
-
 function load_summary_stats(path::String,ext::String)
     pulse_data::Matrix{Float64} = readdlm(path*"pulse_data"*ext)
     pulse_se::Matrix{Float64} = readdlm(path*"pulse_se"*ext)
