@@ -62,7 +62,3 @@ for g in 1:length(genes)
         writedlm(io, reshape(u_bound,(1,:)))
     end
 end
-
-
-
-  
