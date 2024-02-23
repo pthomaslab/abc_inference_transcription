@@ -17,52 +17,22 @@ using StatsPlots
 using Catalyst
 using LsqFit
 using Distances
+using Clustering
 
 Plots.default(dpi = 200, size = (400,300), fg_legend = :transparent, background_color_legend = :transparent);
 
-include("load_data.jl")
+dir = "~/raw_data/";  #edit with your personal directory
 
 #load raw data
-dir = "~/raw_data/";  #edit with your personal directory
-uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment = read_all_data(dir,".csv");
-
-#total counts matrix:
-total_data = uu_data + us_data + lu_data + ls_data;
-
-########## Pre-process data ##########
-
-#cluster cells with respect to cell cycle position
-n_clusters = 5
-age, τ_ = age_clusters(theta, n_clusters)
-
-#distinguishing between pulse-treated and chase-treated cells
-pulse_idx = findall(x->x>=0 && x<=6, experiment)
-chase_idx = findall(x->x>=7, experiment)
-
-#empirical distributions of cells across the 5 cell cycle stages and 11 labelling conditions
-cells_per_id = [findall(x->x==e,experiment) for e in sort(unique(experiment))[2:end-1]];
-cells_per_age = [findall(x->x==τ,age) for τ in sort(unique(age))];
-cells_age_id = [[intersect(cells_age,cells_id) for cells_age in cells_per_age] for cells_id in cells_per_id];
-
-n_cells_id = sum(length.(cells_per_id));
-age_id_distribution = [length.(cells) ./ n_cells_id for cells in cells_age_id]
-age_dist_pulse = length.([intersect(cells,pulse_idx) for cells in cells_per_age]) ./ length(pulse_idx);
-age_dist_chase = length.([intersect(cells,chase_idx) for cells in cells_per_age]) ./ length(chase_idx);
+include("load_data.jl")
 
 #gene filtering
 include("gene_selection.jl")
 
 #load gene list
-all_gene_ids = readdlm("data/all_gene_ids.txt")[:,1]
-all_gene_names = readdlm("data/all_gene_names.txt")[:,1]
 genes = Int64.(readdlm("data/selected_genes.txt")[:,1])
 gene_names = all_gene_names[genes];
 gene_ids = all_gene_ids[genes];
-
-#define unlabelled, labelled and total mRNA count datasets for selected genes
-u_data = uu_data[:,genes] + us_data[:,genes];
-l_data = lu_data[:,genes] + ls_data[:,genes];
-t_data = u_data + l_data;
 
 ########## Estimate cell-specific capture efficiencies ##########
 include("total_count_capture_efficiency.jl")
@@ -90,19 +60,48 @@ n_trials = 250000
 #submit simulations locally or on high-performance computing cluster (can submit multiple simulation runs)
 submit = 1
 
+#run simulations and generate summary statistics
 include("abc_simulation.jl")
 
 ############################################################################################################
 # 3. Parameter inference and model selection
 
-#choose model index to compare with data
+#choose model index to compute errors against the data
 m = 1  #2, 3, 4, 5
 model_name = ["const","const_const","kon","alpha","gamma"][m]
 
-#load model-generated summary statistics
-s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean = load_s_data("data/simulations/",model_name,".txt")
+#compute errors across models-parameters and genes
+include("compute_errors.jl")
+#convert error data to a compressed format
+include("process_error_files.jl")
+
+#obtain posterior distributions
+include("accepted_particles.jl")
+
+#compute constant and non-constant model probabilities
+include("model_probs.jl")
+#compute conditional model probabilities (for constant and non-constant models separately)
+include("constant_model_probs.jl")
+include("non_constant_model_probs.jl")
+
+#classify genes wrt to the 5 models
+include("model_selection.jl") 
+
+#see model selection outcome
+model_sel_df = CSV.read("data/model_selection/model_selection_results.txt", DataFrame)
+
+############################################################################################################
+# 4. Transcription kinetics analysis
 
 
+############################################################################################################
+# 5. Noise decomposition
 
 
+############################################################################################################
+# 6. Constant genes: Scaling properties of gene expression with cell size
+
+
+############################################################################################################
+# 7. Non-constant genes: Properties of cell cycle-dependent gene expression
 
