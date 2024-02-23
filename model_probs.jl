@@ -28,22 +28,14 @@ function get_model_probs(err::Vector{Vector{Float64}},ε::Float64)
 end
 
 
-f_1 = JDFFile("data/large_scale_simulations/errors/error_const.jdf")
-
-f_2 = JDFFile("data/large_scale_simulations/errors/error_const_const.jdf")
-
-f_3 = JDFFile("data/large_scale_simulations/errors/error_kon.jdf")
-
-f_4 = JDFFile("data/large_scale_simulations/errors/error_alpha.jdf")
-
-f_5 = JDFFile("data/large_scale_simulations/errors/error_gamma.jdf")
+f_1 = JDFFile("data/simulations/errors/error_const.jdf")
+f_2 = JDFFile("data/simulations/errors/error_const_const.jdf")
+f_3 = JDFFile("data/simulations/errors/error_kon.jdf")
+f_4 = JDFFile("data/simulations/errors/error_alpha.jdf")
+f_5 = JDFFile("data/simulations/errors/error_gamma.jdf")
 
 
-
-model_name = ["const","const_const","kon","alpha","gamma"];
-
-
-for g in 1:3419
+for g in 1:length(genes)
     err::Vector{Vector{Float64}} = [vcat(f_1["x"*string(g)],f_2["x"*string(g)]),
                                     vcat(f_3["x"*string(g)],f_4["x"*string(g)],f_5["x"*string(g)])]
     err = sort.(err)
