@@ -70,7 +70,10 @@ function compute_trunc_errors(pulse_mean::Matrix{Float64},pulse_mean_se::Matrix{
 end
 
 ################################################################################################################
+#load model-generated summary statistics
+s_pulse_mean,s_pulse_ff,s_chase_mean,s_chase_ff,s_ratios,s_mean_corr,s_corr_mean = load_s_data("data/simulations/",model_name,".txt");
 
+#compute errors
 @time (compute_trunc_errors(pulse_mean,pulse_mean_se,pulse_ff,pulse_ff_se,chase_mean,chase_mean_se,chase_ff,chase_ff_se,ratio_data,ratio_se,
     mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se,s_pulse_mean,s_pulse_ff,s_chase_mean,s_chase_ff,s_ratios,s_mean_corr,s_corr_mean,model_name));
 
