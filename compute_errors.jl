@@ -1,3 +1,28 @@
+function load_s_data(path::String, model_name::String, ext::String)
+    s_pulse::Matrix{Float64} = readdlm(path*model_name*"/s_pulse_"*model_name*ext)
+    s_chase::Matrix{Float64} = readdlm(path*model_name*"/s_chase_"*model_name*ext)
+    s_ratios::Matrix{Float64} = readdlm(path*model_name*"/s_ratios_"*model_name*ext)
+    s_mean_corr::Matrix{Float64} = readdlm(path*model_name*"/s_mean_corr_"*model_name*ext)
+    s_corr_mean::Matrix{Float64} = readdlm(path*model_name*"/s_corr_mean_"*model_name*ext)
+    return s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean
+end
+
+function get_mean_subset(data::Matrix{Float64})
+    sub = Matrix{Float64}(undef,(Int64(size(data)[1]/2),size(data)[2]))
+    for i in 1:size(sub)[1]
+        sub[i,:] = data[2*i-1,:]
+    end
+    return sub
+end
+
+function get_ff_subset(data::Matrix{Float64})
+    sub = Matrix{Float64}(undef,(Int64(size(data)[1]/2),size(data)[2]))
+    for i in 1:size(sub)[1]
+        sub[i,:] = data[2*i,:]
+    end
+    return sub
+end
+
 function nlsqerror_part(data::Vector{Float64},se::Vector{Float64},s_data::Vector{Float64},n_summary_stats::Int64)::Float64
     local ε::Float64
     σ::Float64 = 0.1
@@ -11,30 +36,6 @@ function nlsqerror_part(data::Vector{Float64},se::Vector{Float64},s_data::Vector
         err += (data[i] - s_data[i])^2 / (se[i]^2 + σ^2 * data[i]^2 + ε)
     end
     return err / n_summary_stats
-end
-
-
-function load_summary_stats(path::String,ext::String)
-    pulse_data::Matrix{Float64} = readdlm(path*"pulse_data"*ext)
-    pulse_se::Matrix{Float64} = readdlm(path*"pulse_se"*ext)
-    chase_data::Matrix{Float64} = readdlm(path*"chase_data"*ext)
-    chase_se::Matrix{Float64} = readdlm(path*"chase_se"*ext)
-    ratio_data::Matrix{Float64} = readdlm(path*"ratio_data"*ext)
-    ratio_se::Matrix{Float64} = readdlm(path*"ratio_se"*ext)
-    mean_corr_data::Matrix{Float64} = readdlm(path*"mean_corr_data"*ext)
-    mean_corr_se::Matrix{Float64} = readdlm(path*"mean_corr_se"*ext)
-    corr_mean_data::Matrix{Float64} = readdlm(path*"corr_mean_data"*ext)
-    corr_mean_se::Matrix{Float64} = readdlm(path*"corr_mean_se"*ext)
-    return pulse_data,pulse_se,chase_data,chase_se,ratio_data,ratio_se,mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se
-end
-
-function load_s_data(path::String, model_name::String, ext::String)
-    s_pulse::Matrix{Float64} = readdlm(path*model_name*"/s_pulse_"*model_name*ext)
-    s_chase::Matrix{Float64} = readdlm(path*model_name*"/s_chase_"*model_name*ext)
-    s_ratios::Matrix{Float64} = readdlm(path*model_name*"/s_ratios_"*model_name*ext)
-    s_mean_corr::Matrix{Float64} = readdlm(path*model_name*"/s_mean_corr_"*model_name*ext)
-    s_corr_mean::Matrix{Float64} = readdlm(path*model_name*"/s_corr_mean_"*model_name*ext)
-    return s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean
 end
 
 function compute_trunc_errors(pulse_data::Matrix{Float64}, pulse_se::Matrix{Float64}, chase_data::Matrix{Float64}, chase_se::Matrix{Float64},
@@ -65,20 +66,8 @@ end
 
 ################################################################################################################
 
-m = 1   #2, 3, 4, 5
-
-model_name = ["const","const_const","kon","alpha","gamma"][m]
-
-#load model outputs
-s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean = load_s_data("data/simulations/",model_name,".txt")
-
-#load data summary statistics
-pulse_data,pulse_se,chase_data,chase_se,ratio_data,ratio_se,
-mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se = load_summary_stats("data/summary_stats/", ".txt");
-
-@time (compute_trunc_errors(pulse_data,pulse_se,chase_data,chase_se,ratio_data,ratio_se,
-        mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se,s_pulse,s_chase,s_ratios,
-        s_mean_corr,s_corr_mean,model_name));
+@time (compute_trunc_errors(pulse_mean,pulse_ff,pulse_mean_se,pulse_ff_se,chase_mean,chase_ff,chase_mean_se,chase_ff_se,ratio_data,ratio_se,
+        mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se,s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean,model_name));
 
 
 
