@@ -27,10 +27,8 @@ function get_model_probs(err::Matrix{Float64},ε::Float64)
     return model_prob, l_b, u_b
 end
 
-f_1 = JDFFile("data/large_scale_simulations/errors/error_const.jdf")
-
-f_2 = JDFFile("data/large_scale_simulations/errors/error_const_const.jdf")
-
+f_1 = JDFFile("data/large_scale_simulations/errors/error_const.jdf");
+f_2 = JDFFile("data/large_scale_simulations/errors/error_const_const.jdf");
 
 #set acceptance threshold ε
 ε = 4.8
