@@ -56,4 +56,28 @@ function age_clusters(theta::Vector{Float64}, n_clusters::Int64)
     return clusters, τ_
 end
 
+uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment = read_all_data(dir,".csv");
+
+#total counts matrix:
+total_data = uu_data + us_data + lu_data + ls_data;
+
+########## Pre-process data ##########
+
+#cluster cells with respect to cell cycle position
+n_clusters = 5
+age, τ_ = age_clusters(theta, n_clusters)
+
+#distinguishing between pulse-treated and chase-treated cells
+pulse_idx = findall(x->x>=0 && x<=6, experiment)
+chase_idx = findall(x->x>=7, experiment)
+
+#empirical distributions of cells across the 5 cell cycle stages and 11 labelling conditions
+cells_per_id = [findall(x->x==e,experiment) for e in sort(unique(experiment))[2:end-1]];
+cells_per_age = [findall(x->x==τ,age) for τ in sort(unique(age))];
+cells_age_id = [[intersect(cells_age,cells_id) for cells_age in cells_per_age] for cells_id in cells_per_id];
+
+n_cells_id = sum(length.(cells_per_id));
+age_id_distribution = [length.(cells) ./ n_cells_id for cells in cells_age_id]
+age_dist_pulse = length.([intersect(cells,pulse_idx) for cells in cells_per_age]) ./ length(pulse_idx);
+age_dist_chase = length.([intersect(cells,chase_idx) for cells in cells_per_age]) ./ length(chase_idx);
 
