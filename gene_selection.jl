@@ -25,7 +25,15 @@ function filter_genes(lu_data::Matrix{Float64},ls_data::Matrix{Float64},total_da
     return all_genes[Int64.(union(sel_1,sel_2))]
 end
     
-sel = filter_genes(lu_data,ls_data,total_data,cells_per_age);
+genes = filter_genes(lu_data,ls_data,total_data,cells_per_age);
+writedlm("data/selected_genes.txt",genes);
 
-writedlm("data/selected_genes.txt",sel);
+#load all gene IDs and names
+all_gene_ids = readdlm("data/all_gene_ids.txt")[:,1];
+all_gene_names = readdlm("data/all_gene_names.txt")[:,1];
+
+#define unlabelled, labelled and total mRNA count datasets for selected genes
+u_data = uu_data[:,genes] + us_data[:,genes];
+l_data = lu_data[:,genes] + ls_data[:,genes];
+t_data = u_data + l_data;
 
