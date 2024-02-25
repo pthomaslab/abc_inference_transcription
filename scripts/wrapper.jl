@@ -92,7 +92,7 @@ model_sel_df = CSV.read("data/model_selection/model_selection_results.txt", Data
 
 ############################################################################################################
 # 4. Transcription kinetics analysis
-
+include("posterior_kinetics.jl")
 
 ############################################################################################################
 # 5. Noise decomposition
