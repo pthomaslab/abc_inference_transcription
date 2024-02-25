@@ -1,3 +1,37 @@
+################################# Posterior distribution of a single gene #######################################
+function plot_const_posterior_density(θ::Matrix{Float64})
+    rate_names::Vector{String} = ["burst frequency","burst size","synthesis rate","decay rate"]
+    lims = [(-3,3),(-6,6),(-3,3),(-3,2)]
+    p1 = [density(θ[:,i], linewidth = 4, xlims = lims[i], 
+        label = false, ylabel = "probability density", title = rate_names[i], titlefontsize = 11, color = :skyblue4, size = (350,250), dpi=300) for i in 1:lastindex(rate_names)]
+    p2 = [plot(KernelDensity.kde((θ[:,i], θ[:,j])), linewidth = 3, color = :viridis, xlims = lims[i], ylims = lims[j],colorbar_ticks = nothing,
+        xlabel = rate_names[i], ylabel = rate_names[j], markersize = 5,markeralpha = 0.8,markerstrokewidth = 0.0, label = false, colorbar_title = "\nprobability density",
+        size = (350,250),right_margin = 3mm, dpi=300) for i in 1:size(θ)[2] for j in 1:i-1]
+    return vcat(p1...,p2...)
+end
+
+function get_burst_kinetics(sets::Matrix{Float64}, m::Int64)
+    vary_flag::Vector{Int64} = [[0,0,0,0],[0,0,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]][m];
+    vary_map::Vector{Any} = get_vary_map(vary_flag,5)
+    kinetics::Matrix{Float64} = hcat(sets[:,vary_map[1]],sets[:,vary_map[3]] .- sets[:,vary_map[2]],sets[:,vary_map[3]],sets[:,vary_map[4]])
+    return kinetics
+end
+
+m = 1
+model_name = model_names[m]
+
+g = 51  #102      
+#g_name = String(ms_df.gene_name[ms_df.model .== m][g])
+
+particles = posterior[m][ms[ms[:,2] .== m,1][g]]
+
+θ = sets[m][particles,:]
+kinetics = get_burst_kinetics(θ,m)
+
+p = plot_const_posterior_density(kinetics);
+[savefig(p1[i],"data/paper_figures/supplement/posterior_densities_$i.svg") for i in 1:lastindex(p1)];
+
+
 ###########################     distributions of MAP estimates across genes     ##########################
 vary_flags::Vector{Vector{Int64}} = [[0,0,0,0],[0,0,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]]
 vary_maps::Vector{Vector{Any}} = [get_vary_map(vf,5) for vf in vary_flags];
