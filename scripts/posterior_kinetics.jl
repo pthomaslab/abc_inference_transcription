@@ -89,10 +89,10 @@ p1 = density(10 .^θ[:,end], xlabel = "labelling rate", ylabel = "probabiliy den
 savefig(p1,"data/paper_figures/supplement/gene_$g_lambda.svg")
 
 ###########################     distributions of MAP estimates across genes     ##########################
-vary_flags::Vector{Vector{Int64}} = [[0,0,0,0],[0,0,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]]
+vary_flags::Vector{Vector{Int64}} = [[0,0,0,0],[0,0,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]];
 vary_maps::Vector{Vector{Any}} = [get_vary_map(vf,5) for vf in vary_flags];
 
-col = [:skyblue4, :seagreen4, :gold]
+col = [:skyblue4, :seagreen4, :gold];
 x_labs = ["constant \ngenes","burst frequency \ngenes","burst size \ngenes","decay rate \ngenes"];
 
 x = mean(t_data,dims=1)[1,:]
