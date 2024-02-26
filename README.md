@@ -41,9 +41,11 @@ After collecting the completed simulations, we proceed with comparing the summar
 #### Computing model probabilities
 We proceed with model selection, which involves 2 steps: First, for each gene, we assign a probability to the constant hypothesis and the non-constant hypothesis. Second, we compute the conditional model probabilites over constant models and over non-constant models separately. For all these probabilites, we also compute $95$% confidence intervals by bootstrapping the accepted particles of each gene. Next, we perform model selection and classify genes to the different models. 
 
-### 4. Transcription kinetics analysis
+### 4. Transcription kinetics
+Next, we can inspect the inferred posterior distributions of kinetic rate parameters. We can pick a model index `m` $=1, \dots ,5$ and a gene index `g` and inspect the marginal posterior densities of its parameters or pairs of parameters. We also plot the distributions of point estimates of the kinetic rates across genes. 
 
-### 5. Noise decomposition
+### 5. Statistics recovery and noise decomposition
+We can use the inferred parameters and the model to recover statistics of gene expression: we obtain model predictions for the mean and noise levels of gene expression in the absence of technical (downsampling) noise.
 
 ### 6. Constant genes: Scaling properties of gene expression with cell size
 
