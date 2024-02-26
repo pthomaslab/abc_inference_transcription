@@ -88,7 +88,7 @@ include("non_constant_model_probs.jl")
 include("model_selection.jl") 
 
 #see model selection outcome
-model_sel_df = CSV.read("data/model_selection/model_selection_results.txt", DataFrame)
+ms_df = CSV.read("data/model_selection/model_selection_results.txt", DataFrame)
 
 ############################################################################################################
 # 4. Transcription kinetics analysis
