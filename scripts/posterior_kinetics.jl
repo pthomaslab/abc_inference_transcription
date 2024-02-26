@@ -1,12 +1,46 @@
+function get_n_particles(posterior::Vector{Vector{Vector{Int64}}})
+    n_particles::Vector{Vector{Int64}} = [length.(p) for p in posterior]
+    for (i,p_) in enumerate(posterior)
+        zeros_ = findall(x->x==[0],p_)
+        n_particles[i][zeros_] .= 0
+    end
+    return n_particles
+end
+    
+function get_posterior_estimate(sets::Matrix{Float64},posterior_idx::Vector{Vector{Int64}},gene_vec::Vector{Int64},estimate::String)
+    estimates = Matrix{Float64}(undef,(length(gene_vec),size(sets)[2]))
+    if estimate == "map"
+        for (i,g) in enumerate(gene_vec)
+            estimates[i,:] = sets[posterior_idx[g][1],:]
+        end
+    elseif estimate == "mean"
+        for (i,g) in enumerate(gene_vec)
+            posterior_sets::Matrix{Float64} = sets[posterior_idx[g],:]
+            estimates[i,:] = mean(posterior_sets,dims=1)[1,:]
+        end
+    end
+    return estimates
+end
+
+function get_posterior_ci(sets::Matrix{Float64},posterior_idx::Vector{Vector{Int64}},gene_vec::Vector{Int64},q::Float64)
+    lbs = Matrix{Float64}(undef,(length(gene_vec),size(sets)[2]))
+    ubs = Matrix{Float64}(undef,(length(gene_vec),size(sets)[2]))
+    for (i,g) in enumerate(gene_vec)
+        lbs[i,:] = [quantile(sets[posterior_idx[g],j],1-q) for j in 1:size(sets)[2]]
+        ubs[i,:] = [quantile(sets[posterior_idx[g],j],q) for j in 1:size(sets)[2]]
+    end
+    return [lbs,ubs]
+end
+
 ################################# Posterior densities of parameters of a single gene #######################################
-function plot_const_posterior_density(θ::Matrix{Float64})
+function plot_const_posterior_density(θ::Matrix{Float64},g_name::String)
     rate_names::Vector{String} = ["burst frequency","burst size","synthesis rate","decay rate"]
     lims = [(-3,3),(-6,6),(-3,3),(-3,2)]
-    p1 = [density(θ[:,i], linewidth = 4, xlims = lims[i], 
+    p1 = [density(θ[:,i], linewidth = 4, xlims = lims[i], title = g_name,
         label = false, ylabel = "probability density", title = rate_names[i], titlefontsize = 11, color = :skyblue4, size = (350,250), dpi=300) for i in 1:lastindex(rate_names)]
-    p2 = [plot(KernelDensity.kde((θ[:,i], θ[:,j])), linewidth = 3, color = :viridis, xlims = lims[i], ylims = lims[j],colorbar_ticks = nothing,
+    p2 = [plot(KernelDensity.kde((θ[:,i], θ[:,j])), linewidth = 3, color = :viridis, title = g_name, xlims = lims[i], ylims = lims[j],colorbar_ticks = nothing,
         xlabel = rate_names[i], ylabel = rate_names[j], markersize = 5,markeralpha = 0.8,markerstrokewidth = 0.0, label = false, colorbar_title = "\nprobability density",
-        size = (350,250),right_margin = 3mm, dpi=300) for i in 1:size(θ)[2] for j in 1:i-1]
+        size = (350,250),right_margin = 3mm, dpi=200) for i in 1:size(θ)[2] for j in 1:i-1]
     return vcat(p1...,p2...)
 end
 
@@ -16,15 +50,43 @@ function get_burst_kinetics(sets::Matrix{Float64}, m::Int64)
     kinetics::Matrix{Float64} = hcat(sets[:,vary_map[1]],sets[:,vary_map[3]] .- sets[:,vary_map[2]],sets[:,vary_map[3]],sets[:,vary_map[4]])
     return kinetics
 end
+ 
+posterior = Vector{Vector{Vector{Int64}}}(undef,length(model_names));
+for (i,name) in enumerate(model_names)
+    file = open("data/posteriors/particles_"*name*".txt", "r")
+    posterior[i] = Vector{Vector{Int64}}(undef,length(genes))
+    for (j,line) in enumerate(eachline(file))
+        posterior[i][j] = parse.(Int64,split(line,"\t")) ## or whatever else you want to do with the line.
+    end
+    close(file)
+end  
 
-model_name = model_names[m]
-particles = posterior[m][g]
+n_particles_model = get_n_particles(posterior);
+n_particles_mat = hcat(n_particles_model...);
+n_particles = sum(n_particles_mat, dims=2)[:,1];
 
-θ = sets[m][particles,:]
-kinetics = get_burst_kinetics(θ,m)
+map_sets = [get_posterior_estimate(sets[m],posterior[m],sel_genes[m],"map") for m in 1:lastindex(model_names)];
+post_mean_sets = [get_posterior_estimate(sets[m],posterior[m],sel_genes[m],"mean") for m in 1:lastindex(model_names)];
+cis = [get_posterior_ci(sets[m],posterior[m],sel_genes[m],0.95) for m in 1:lastindex(model_names)];
 
-p = plot_const_posterior_density(kinetics);
-[savefig(p[i],"data/paper_figures/supplement/posterior_densities_$i.svg") for i in 1:lastindex(p1)];
+[writedlm("data/posterior_estimates/map_sets_"*model_names[m]*".txt",map_sets[m]) for m in 1:lastindex(model_names)];
+[writedlm("data/posterior_estimates/post_mean_sets_"*model_names[m]*".txt",post_mean_sets[m]) for m in 1:lastindex(model_names)];
+[writedlm("data/posterior_estimates/ci_lbs_"*model_names[m]*".txt",cis[m][1]) for m in 1:lastindex(model_names)];
+[writedlm("data/posterior_estimates/ci_ubs_"*model_names[m]*".txt",cis[m][2]) for m in 1:lastindex(model_names)];
+
+###########################     posterior densities of a single gene's parameters    ##########################
+model_name = model_names[m];
+particles = posterior[m][g];
+
+θ = sets[m][particles,:];
+kinetics = get_burst_kinetics(θ,m);
+
+p = plot_const_posterior_density(kinetics, gene_names[g]);
+[savefig(p[i],"data/paper_figures/supplement/gene_$g_posterior_densities_$i.svg") for i in 1:lastindex(p)];
+
+p1 = density(10 .^θ[:,end], xlabel = "labelling rate", ylabel = "probabiliy density", title = g_name, xlims = (10^(-0.8), 1.1), 
+                linewidth = 5, color = :skyblue4, size = (350,250), dpi = 200,label = false)
+savefig(p1,"data/paper_figures/supplement/gene_$g_lambda.svg")
 
 ###########################     distributions of MAP estimates across genes     ##########################
 vary_flags::Vector{Vector{Int64}} = [[0,0,0,0],[0,0,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]]
