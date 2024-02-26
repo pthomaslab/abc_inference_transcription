@@ -41,6 +41,7 @@ betas = readdlm("data/capture_efficiencies.txt")[:,1];
 ########## Compute summary statistics ##########
 include("data_summary_statistics.jl")
 
+#load summary statistics
 pulse_mean,pulse_ff,pulse_mean_se,pulse_ff_se,chase_mean,chase_ff,chase_mean_se,chase_ff_se,ratio_data,ratio_se,mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se = load_summary_stats("data/summary_stats/",".txt");
 
 ############################################################################################################
@@ -87,16 +88,29 @@ include("non_constant_model_probs.jl")
 #classify genes wrt to the 5 models
 include("model_selection.jl") 
 
+#indices of genes across the 5 different models
+sel_genes = [Int64.(readdlm("Julia/model_selection/"*mn*"_genes.txt")[:,1]) for mn in model_names];
 #see model selection outcome
-ms_df = CSV.read("data/model_selection/model_selection_results.txt", DataFrame)
+ms_df = CSV.read("data/model_selection/model_selection_results.txt", DataFrame);
 
 ############################################################################################################
-# 4. Transcription kinetics analysis
+# 4. Transcription kinetics
+#select model class
+m = 1
+#pick a gene index
+g = sample(sel_genes[m]);
+#plot posterior densities of the gene's parameters and distributions of point estimates of parameters across genes
 include("posterior_kinetics.jl")
 
 ############################################################################################################
-# 5. Noise decomposition
+# 5. Statistics recovery and noise decomposition
+#select model class
+m = 1  #2, 3, 4, 5
+#compute all cell cycle-dependent and labelling-dependent mean and noise statistics (without technical noise)
+include("recover_statistics.jl")
 
+#compute and visualise noise-mean relationships across genes
+include("noise_decomposition.jl")
 
 ############################################################################################################
 # 6. Constant genes: Scaling properties of gene expression with cell size
