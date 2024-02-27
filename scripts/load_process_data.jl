@@ -64,12 +64,12 @@ total_data = uu_data + us_data + lu_data + ls_data;
 ########## Pre-process data ##########
 
 #cluster cells with respect to cell cycle position
-n_clusters = 5
-age, τ_ = age_clusters(theta, n_clusters)
+n_age_clusters = 5;
+age, τ_ = age_clusters(theta, n_age_clusters);
 
 #distinguishing between pulse-treated and chase-treated cells
-pulse_idx = findall(x->x>=0 && x<=6, experiment)
-chase_idx = findall(x->x>=7, experiment)
+pulse_idx = findall(x->x>=0 && x<=6, experiment);
+chase_idx = findall(x->x>=7, experiment);
 
 #empirical distributions of cells across the 5 cell cycle stages and 11 labelling conditions
 cells_per_id = [findall(x->x==e,experiment) for e in sort(unique(experiment))[2:end-1]];
