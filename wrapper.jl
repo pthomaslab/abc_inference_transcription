@@ -24,10 +24,10 @@ Plots.default(dpi = 200, size = (400,300), fg_legend = :transparent, background_
 dir = "~/raw_data/";  #edit with your personal directory
 
 #load raw data
-include("load_data.jl")
+include("scripts/load_data.jl")
 
 #gene filtering
-include("gene_selection.jl")
+include("scripts/gene_selection.jl")
 
 #load gene list
 genes = Int64.(readdlm("data/selected_genes.txt")[:,1])
@@ -35,11 +35,11 @@ gene_names = all_gene_names[genes];
 gene_ids = all_gene_ids[genes];
 
 ########## Estimate cell-specific capture efficiencies ##########
-include("total_count_capture_efficiency.jl")
+include("scripts/total_count_capture_efficiency.jl")
 betas = readdlm("data/capture_efficiencies.txt")[:,1];
 
 ########## Compute summary statistics ##########
-include("data_summary_statistics.jl")
+include("scripts/data_summary_statistics.jl")
 
 #load summary statistics
 pulse_mean,pulse_ff,pulse_mean_se,pulse_ff_se,chase_mean,chase_ff,chase_mean_se,chase_ff_se,ratio_data,ratio_se,mean_corr_data,mean_corr_se,corr_mean_data,corr_mean_se = load_summary_stats("data/summary_stats/",".txt");
@@ -57,12 +57,12 @@ pulse_mean,pulse_ff,pulse_mean_se,pulse_ff_se,chase_mean,chase_ff,chase_mean_se,
 #choose model index to simulate
 m = 1   #2, 3, 4, 5
 #select number of simulations in current run
-n_trials = 250000
+n_trials = 250000;
 #submit simulations locally or on high-performance computing cluster (can submit multiple simulation runs)
-submit = 1
+submit = 1;
 
 #run simulations and generate summary statistics
-include("abc_simulation.jl")
+include("scripts/abc_simulation.jl")
 
 ############################################################################################################
 # 3. Parameter inference and model selection
@@ -72,24 +72,24 @@ m = 1  #2, 3, 4, 5
 model_name = ["const","const_const","kon","alpha","gamma"][m]
 
 #compute errors across models-parameters and genes
-include("compute_errors.jl")
+include("scripts/compute_errors.jl")
 #convert error data to a compressed format
-include("process_error_files.jl")
+include("scripts/process_error_files.jl")
 
 #obtain posterior distributions
-include("accepted_particles.jl")
+include("scripts/accepted_particles.jl")
 
 #compute constant and non-constant model probabilities
-include("model_probs.jl")
+include("scripts/model_probs.jl")
 #compute conditional model probabilities (for constant and non-constant models separately)
-include("constant_model_probs.jl")
-include("non_constant_model_probs.jl")
+include("scripts/constant_model_probs.jl")
+include("scripts/non_constant_model_probs.jl")
 
 #classify genes wrt to the 5 models
-include("model_selection.jl") 
+include("scripts/model_selection.jl") 
 
 #indices of genes across the 5 different models
-sel_genes = [Int64.(readdlm("Julia/model_selection/"*mn*"_genes.txt")[:,1]) for mn in model_names];
+sel_genes = [Int64.(readdlm("data/model_selection/"*mn*"_genes.txt")[:,1]) for mn in model_names];
 #see model selection outcome
 ms_df = CSV.read("data/model_selection/model_selection_results.txt", DataFrame);
 
@@ -100,22 +100,30 @@ m = 1
 #pick a gene index
 g = sample(sel_genes[m]);
 #plot posterior densities of the gene's parameters and distributions of point estimates of parameters across genes
-include("posterior_kinetics.jl")
+include("scripts/posterior_kinetics.jl")
 
 ############################################################################################################
 # 5. Statistics recovery and noise decomposition
 #select model class
 m = 1  #2, 3, 4, 5
 #compute all cell cycle-dependent and labelling-dependent mean and noise statistics (without technical noise)
-include("recover_statistics.jl")
+include("scripts/recover_statistics.jl")
 
 #compute and visualise noise-mean relationships across genes
-include("noise_decomposition.jl")
+include("scripts/noise_decomposition.jl")
 
 ############################################################################################################
 # 6. Constant genes: Scaling properties of gene expression with cell size
 
+#load functions for clustering genes with respect to mean expression or kinetic rate similarity
+include("scripts/gene_clustering.jl")
+
+#analyse properties of constant scaling and non-scaling genes
+include("scripts/constant_genes.jl")
 
 ############################################################################################################
 # 7. Non-constant genes: Properties of cell cycle-dependent gene expression
+
+#cluster non-constant genes with respect to their cell cycle-dependent kinetic rates
+include("scripts/non_constant_genes.jl")
 
