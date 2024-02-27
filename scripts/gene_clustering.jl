@@ -1,19 +1,17 @@
-function preprocess_rates(sets::Vector{Matrix{Float64}},m::Vector{Int64})
-    nc_vary_flags::Vector{Vector{Int64}} = [[1,0,0,0],[0,0,1,0],[0,0,0,1]][m];
-    vary_maps::Vector{Vector{Any}} = [get_vary_map(vary_flag,5) for vary_flag in nc_vary_flags];
-    vary_idx::Vector{Vector{Int64}} = [filter(x->length(x)>1,vary_map)[1] for vary_map in vary_maps]
-    vary_kinetics::Vector{Matrix{Float64}} = [sets[i][:,idx] for (i,idx) in zip(m,vary_idx)]
-    x::Matrix{Float64} = vcat([10 .^vk for vk in vary_kinetics]...)
+function preprocess_nc_rates(sets::Matrix{Float64},m::Int64)
+    vary_flag::Vector{Int64} = [[1,0,0,0],[0,0,1,0],[0,0,0,1]][m]
+    vary_map::Vector{Any} = get_vary_map(vary_flag,5)
+    vary_idx::Vector{Int64} = filter(x->length(x)>1,vary_map)[1]
+    x::Matrix{Float64} = 10 .^sets[:,vary_idx]
     norm_x::Matrix{Float64} = (x .- mean(x,dims=2)) ./ std(x,dims=2)
     return norm_x
 end
 
-function get_cosine_similarity(sets::Vector{Matrix{Float64}},m::Vector{Int64})
-    norm_sets = preprocess_rates(sets,m)
+function get_cosine_similarity(sets::Matrix{Float64},m::Int64)
+    norm_sets::Matrix{Float64} = preprocess_nc_rates(sets,m)
     cos_dist::Matrix{Float64} = pairwise(CosineDist(), norm_sets, dims=1)
     return norm_sets,cos_dist
 end
-
 
 function hcl_grid_search(dist::Matrix{Float64},link_method::Symbol,n_clust_max::Int64)
     k_range::Vector{Int64} = [1:n_clust_max;]
@@ -23,7 +21,7 @@ function hcl_grid_search(dist::Matrix{Float64},link_method::Symbol,n_clust_max::
         assign = Clustering.cutree(hcl, k = k)
         cluster_idx = [findall(x->x==j,assign) for j in unique(assign)]
         for l in 1:k 
-            wss[i] += sum(dist[cluster_idx[l],cluster_idx[l]] .^2) #/ length(cluster_idx[l])
+            wss[i] += sum(dist[cluster_idx[l],cluster_idx[l]] .^2) 
         end
     end
     wss = wss ./ 2
@@ -33,8 +31,7 @@ function hcl_grid_search(dist::Matrix{Float64},link_method::Symbol,n_clust_max::
     return wss,pve
 end
 
-
-function get_hierarchical_clustering(sets::Matrix{Float64},dist::Matrix{Float64},link_method::Symbol,gene_vec::Vector{Vector{Int64}},n_clusters::Int64)
+function get_hierarchical_clustering(sets::Matrix{Float64},dist::Matrix{Float64},link_method::Symbol,gene_vec::Vector{Int64},n_clusters::Int64)
     hcl = Clustering.hclust(dist, linkage = link_method)
     assign::Vector{Int64} = Clustering.cutree(hcl, k = n_clusters)
     cluster_idx::Vector{Vector{Int64}} = [findall(x->x==i,assign) for i in unique(assign)]
