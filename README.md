@@ -17,7 +17,9 @@ The original scEU-seq data that we analyse were generated and published by the a
 We also suggest that you download the contents of the folder `data` of this repository as it contains other necessary datasets. 
 
 #### Load required packages and raw data
-The script first loads all the required packages for all downstream tasks. Next all the raw data are loaded, including: the unlabelled/labelled-unspliced/spliced mRNA count matrices `uu_data`,`us_data`,`lu_data`,`ls_data`, the cell-specific coordinates along cell cycle progression `theta`, the single-cell fluorescence levels of the cell cycle reporters Cdt1-RFP and Geminin-GFP `rfp`,`gfp`, as well as the pulse/chase labelling conditions of each cell `experiment`. Then, the 4 measurements are summed up to obtain the total mRNA count matrix `total_data`.
+The script first loads all the required packages for all downstream tasks. If you are using Julia for the first time, you can add these packages in Julia by typing `] add "package_name"` in the command line. 
+
+Next, we load all the raw data including: the unlabelled/labelled-unspliced/spliced mRNA count matrices `uu_data`,`us_data`,`lu_data`,`ls_data`, the cell-specific coordinates along cell cycle progression `theta`, the single-cell fluorescence levels of the cell cycle reporters Cdt1-RFP and Geminin-GFP `rfp`,`gfp`, as well as the pulse/chase labelling conditions of each cell `experiment`. We also obtain the total mRNA count matrix `total_data` by summing up the 4 mRNA count matrices.
 
 #### Pre-process data
 The cells are clustered into 5 cell cycle stages (age groups), encoded by the vector `age`. In addition, pulse-treated and chase-treated cells are separated into `pulse_idx` and `chase_idx`. Next, all useful empirical frequencies/distributions of cells across cell cycle stages and labelling conditions are computed. 
