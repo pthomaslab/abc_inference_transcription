@@ -25,11 +25,10 @@ function load_param_sets(path::String, model_idx::Int64, n_groups::Int64)
 end
 
 model_name = ["const","const_const","kon","alpha","gamma"][m];
-map_sets = readdlm("data/posterior_estimates/map_sets_"*model_name*".txt");
+maps = readdlm("data/posterior_estimates/map_sets_"*model_name*".txt");
 
-condition_id = hcat([1/4,1/2,3/4,1,2,3,22,22,22,22,22],[0,0,0,0,0,0,0,1,2,4,6])
-cond_idx = [1:11;]
-
+condition_id = hcat([1/4,1/2,3/4,1,2,3,22,22,22,22,22],[0,0,0,0,0,0,0,1,2,4,6]);
+cond_idx = [1:11;];
 n_steps = length(τ_);
 iv = zeros(9); 
 iv[1] = 1/2;
@@ -52,7 +51,7 @@ id_labels = ["pulse_15", "pulse_30", "pulse_45",
 
 
 @time for i in 1:length(sel_genes)
-    s::Vector{Matrix{Float64}} = run_part_sim(map_sets[i,:],iv,agevec,cycle,pulsevec,chasevec,t0,vary_map,scaling,n_steps,downsampling,betas,age)
+    s::Vector{Matrix{Float64}} = run_part_sim(maps[i,:],iv,agevec,cycle,pulsevec,chasevec,t0,vary_map,scaling,n_steps,downsampling,betas,age)
     for (k,id) in enumerate(id_labels)
         open("data/recovered_statistics/"*model_name*"/"*id*"/mean_u.txt", "a") do io
             writedlm(io, reshape(s[k][:,1],(1,:)))
