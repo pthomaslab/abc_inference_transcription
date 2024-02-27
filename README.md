@@ -50,7 +50,7 @@ Next, we can inspect the inferred posterior distributions of kinetic rate parame
 We can use the inferred parameters and the model to recover statistics of gene expression: we obtain model predictions for the mean and noise levels of gene expression in the absence of technical (downsampling) noise.
 
 ### 6. Constant genes: Scaling properties of gene expression with cell size
-We analyse the two classes of constant genes (scaling and non-scaling) to reveal scaling properties of gene expression with cell size. This compare their mean expression fold change, mean expression rate of change, noise levels due to cell cycle variation as well as mRNA degradation rates.
+We analyse the 2 classes of constant genes (scaling and non-scaling) to reveal scaling properties of gene expression with cell size. This compare their mean expression fold change, mean expression rate of change, noise levels due to cell cycle variation as well as mRNA degradation rates.
 
 ### 7. Non-constant genes: Properties of cell cycle-dependent gene expression
-We cluster the non-constant genes with respect to their cell cycle-dependent kinetic rates to reveal a general pattern of transcription regulation along the cell cycle. 
+We cluster the 3 classes of non-constant genes with respect to their cell cycle-dependent kinetic rates to reveal a general pattern of transcription regulation along the cell cycle. 
