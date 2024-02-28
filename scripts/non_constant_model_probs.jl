@@ -30,9 +30,9 @@ function get_model_probs(err::Matrix{Float64},ε::Float64)
 end
 
 
-f_1 = JDFFile("Julia/large_scale_simulations/errors/error_kon.jdf");
-f_2 = JDFFile("Julia/large_scale_simulations/errors/error_alpha.jdf");
-f_3 = JDFFile("Julia/large_scale_simulations/errors/error_gamma.jdf");
+f_1 = JDFFile("Julia/errors/error_kon.jdf");
+f_2 = JDFFile("Julia/errors/error_alpha.jdf");
+f_3 = JDFFile("Julia/errors/error_gamma.jdf");
 
 #set acceptance threshold ε
 ε = 4.8
