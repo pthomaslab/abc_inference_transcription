@@ -53,7 +53,11 @@ pulse_mean,pulse_ff,pulse_mean_se,pulse_ff_se,chase_mean,chase_ff,chase_mean_se,
 #                                     4: cell cycle-dependent burst size - scaling with size
 #                                     5: cell cycle-dependent decay rate - scaling with size }
 #                                       
- 
+
+#run example realisations of the 5 models
+include("model_realisation.jl")
+
+#run large-scale ABC simulations 
 #choose model index to simulate
 m = 1   #2, 3, 4, 5
 #select number of simulations in current run
