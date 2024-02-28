@@ -95,9 +95,9 @@ nc_ub = readdlm(dir*"nc_/nc_u_bound.txt")
 nc_lb = readdlm(dir*"nc_/nc_l_bound.txt")
 
  
-posterior = Vector{Vector{Vector{Int64}}}(undef,length(model_names))
+posterior = Vector{Vector{Vector{Int64}}}(undef,length(model_names));
 for (i,name) in enumerate(model_names)
-    file = open("Julia/posteriors/$ε/particles_"*name*".txt", "r")
+    file = open("data/posteriors/particles_"*name*".txt", "r")
     posterior[i] = Vector{Vector{Int64}}(undef,length(genes))
     for (j,line) in enumerate(eachline(file))
         posterior[i][j] = parse.(Int64,split(line,"\t")) 
@@ -109,11 +109,8 @@ n_particles_model = get_n_particles(posterior);
 n_particles_mat = hcat(n_particles_model...);
 n_particles = sum(n_particles_mat, dims=2)[:,1];
 
-
 #############################    first model selection    ############################# 
 gene_vec = [1:length(genes);];
-#gene_vec = [1:length(genes);]
-
 prior_odds = 2/3;
 thres = prior_odds / (1 + prior_odds);
 min_particles = 5;
@@ -124,19 +121,16 @@ writedlm(dir*"all/c_gene_ids.txt",gene_ids[c_]);
 writedlm(dir*"all/nc_gene_ids.txt",gene_ids[nc_]);
 
 
-#=
 freq_c = length(c_);
 freq_nc = length(nc_);
 freq_und = length(und_);
 freq_nf = length(nf_);
 model_classes = ["constant","non-constant","undetermined"];
-col = [:skyblue4, :darkgoldenrod2, :azure] 
+col = [:skyblue4, :darkgoldenrod2, :azure]; 
 b = bar([1,2,3],[freq_c,freq_nc,freq_und+freq_nf] ./ length(gene_vec),labels=false,xticks = ([1,2,3],model_classes), color = col[1:3], fillalpha = 0.95,
-            ylabel = "relative frequency", xtickfontsize = 11, size = (450,200),leftmargin=2mm, topmargin=5mm)
-b = annotate!([1,2,3],[freq_c,freq_nc,freq_und+freq_nf]./ length(gene_vec),"n = " .*string.([freq_c,freq_nc,freq_und+freq_nf]),:bottom)
-
-savefig(b,"data/paper_figures/figure_2/const_vs_non.svg")
-=#
+            ylabel = "relative frequency", xtickfontsize = 11, size = (450,200),leftmargin=2mm, topmargin=5mm);
+b = annotate!([1,2,3],[freq_c,freq_nc,freq_und+freq_nf]./ length(gene_vec),"n = " .*string.([freq_c,freq_nc,freq_und+freq_nf]),:bottom);
+savefig(b,"data/paper_figures/figure_2/const_vs_non_genes_freq.svg")
 
 
 #######################    (conditional) constant model selection    #######################
@@ -150,15 +144,14 @@ writedlm("const_genes.txt",c_genes[1]);
 writedlm("const_const_genes.txt",c_genes[2]);
 
 
-#=
 freq_c_genes = length.(c_genes);
-col = [:skyblue4, :lightcyan3, :white]
+col = [:skyblue4, :lightcyan3, :white];
 model_classes = ["scaling","non-scaling","undetermined"];
 b = bar([1,2,3],freq_c_genes ./ length(c_) ,labels=false,xticks = ([1,2,3],model_classes), color = col[1:3], 
-            ylabel = "relative frequency", fillalpha = 1.0, xtickfontsize = 11, size = (450,200),leftmargin=2mm, topmargin=5mm)
-b = annotate!([1,2,3],freq_c_genes ./ length(c_),"n = " .* string.(freq_c_genes),:bottom)
-savefig(b,"data/paper_figures/figure_2/const_genes_freq.svg")
-=#
+            ylabel = "relative frequency", fillalpha = 1.0, xtickfontsize = 11, size = (450,200),leftmargin=2mm, topmargin=5mm);
+b = annotate!([1,2,3],freq_c_genes ./ length(c_),"n = " .* string.(freq_c_genes),:bottom);
+savefig(b,"data/paper_figures/figure_2/const_genes_freq.svg");
+
 
 #######################    (conditional) non-constant model selection    #######################
 nc_sel, nc_genes = cluster_nc_genes(nc_prob,nc_lb,nc_ub,nc_);
@@ -171,17 +164,16 @@ writedlm("kon_genes.txt",nc_genes[1][1]);
 writedlm("alpha_genes.txt",nc_genes[1][2]);
 writedlm("gamma_genes.txt",nc_genes[1][3]);
 
-#=
+
 freq_nc_genes = [length.(nc) for nc in nc_genes]
 plot_freq = vcat([freq_nc_genes[1],freq_nc_genes[2][1:2],[freq_nc_genes[2][3] + sum(freq_nc_genes[3]) + sum(freq_nc_genes[4])]]...) ./ length(nc_)
 nc_labels = ["burst frequency","burst size","decay rate","burst frequency or burst size","burst frequency or decay rate","undetermined"];
-col = [:skyblue4, :seagreen, :gold, :azure, :azure, :azure]  
+col = [:skyblue4, :seagreen, :gold, :azure, :azure, :azure];  
 b = bar([1:length(plot_freq);], plot_freq, label = false, xticks = ([1:length(plot_freq);],nc_labels), fillalpha = 0.8, xtickfontsize = 11, xrotation = 20, 
     top_margin = 5mm, left_margin = 3mm, bottom_margin = 15mm,color = col, ylabel = "relative frequency");
-b = annotate!([1:length(plot_freq);],0.015 .+ plot_freq,"n = " .* string.(Int64.(plot_freq .* length(nc_))),:bottom, size = (650,250))
-
+b = annotate!([1:length(plot_freq);],0.015 .+ plot_freq,"n = " .* string.(Int64.(plot_freq .* length(nc_))),:bottom, size = (650,250));
 savefig(b,"data/paper_figures/figure_2/non_const_genes_freq.svg")
-=#
+
 
 
 ##################### summarise model selection results in a DataFrame ##########################
