@@ -55,7 +55,7 @@ pulse_mean,pulse_ff,pulse_mean_se,pulse_ff_se,chase_mean,chase_ff,chase_mean_se,
 #                                       
 
 #run example realisations of the 5 models
-include("model_realisation.jl")
+include("scripts/model_realisation.jl")
 
 #run large-scale ABC simulations 
 #choose model index to simulate
