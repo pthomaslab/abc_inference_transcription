@@ -77,7 +77,7 @@ cells_per_age = [findall(x->x==τ,age) for τ in sort(unique(age))];
 cells_age_id = [[intersect(cells_age,cells_id) for cells_age in cells_per_age] for cells_id in cells_per_id];
 
 n_cells_id = sum(length.(cells_per_id));
-age_id_distribution = [length.(cells) ./ n_cells_id for cells in cells_age_id]
+age_id_distribution = [length.(cells) ./ n_cells_id for cells in cells_age_id];
 age_dist_pulse = length.([intersect(cells,pulse_idx) for cells in cells_per_age]) ./ length(pulse_idx);
 age_dist_chase = length.([intersect(cells,chase_idx) for cells in cells_per_age]) ./ length(chase_idx);
 
