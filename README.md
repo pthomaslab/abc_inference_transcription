@@ -14,7 +14,8 @@ The original scEU-seq data that we analyse were generated and published by the a
 | GSE128365_SupplementaryData_RPE1_labeled_splicedUMI.csv.gz     |   labelled spliced UMIs   |  
 | GSE128365_SupplementaryData_RPE1_metadata.csv.gz               |   cell-specific metadata  |
 
-The folder `data` of this repository should also be downloaded as it contains other necessary datasets. 
+It is suggested that the folder `data` of this repository is downloaded and placed in your local directory as it contains other necessary datasets. Additionally, it is recommended that all data files contained in the Zenodo repository are downloaded and placed in the same `data` folder.
+
 
 #### Load required packages and raw data
 The script first loads all the required packages for all downstream tasks. If you are using Julia for the first time, you can add these packages in Julia by typing `] add "package_name"` in the command line. 
