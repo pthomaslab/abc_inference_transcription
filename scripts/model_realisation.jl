@@ -1,21 +1,4 @@
-using DifferentialEquations
-using Sundials
-using DelimitedFiles
-using CSV
-using DataFrames
-using Statistics
-using Distributions
-using StatsBase
-using Plots
-using Plots.PlotMeasures
-using Colors
-using StatsPlots
-using BenchmarkTools
-using Profile
-
-include("load_data.jl")
 include("model.jl")
-
 
 function run_sim(θ::Vector{Float64}, iv::Vector{Float64}, agevec::Vector{Float64}, cycle::Float64, pulsevec::Vector{Float64}, chasevec::Vector{Float64}, t0::Float64, vary_map::Vector{Any},
     scaling::Int64, n_steps::Int64, downsampling::Bool, betas::Vector{Float64}, age::Vector{Int64}, pulse_idx::Vector{Int64}, chase_idx::Vector{Int64}, age_dist::Matrix{Float64})
@@ -53,28 +36,9 @@ function run_sim(θ::Vector{Float64}, iv::Vector{Float64}, agevec::Vector{Float6
     return s_pulse, s_chase, s_ratios, s_mean_corr, s_corr_mean
 end
 
-
-function run_part_sim(θ::Vector{Float64}, iv::Vector{Float64}, agevec::Vector{Float64}, cycle::Float64, pulsevec::Vector{Float64}, chasevec::Vector{Float64}, t0::Float64, vary_map::Vector{Any},
-    scaling::Int64, n_steps::Int64, downsampling::Bool, betas::Vector{Float64}, age::Vector{Int64})
-    s = Matrix{Float64}(undef,(length(agevec),5))
-    s_tot = Matrix{Float64}(undef,(length(agevec),2))
-    #covariance of age-dependent means   
-    ss_iv::Vector{Float64} = get_steady_state_iv(θ,vary_map,scaling,n_steps,iv,cycle)  
-    s = get_synthetic_data(θ,vary_map,scaling,n_steps,ss_iv,agevec,cycle,pulsevec[7],chasevec[7],t0,downsampling,betas,age)
-    ε = [0.0 * (>(x,0.0)) + 0.0001 *(==(x,0.0)) for x in s[:,1] + s[:,2]]
-    s_tot[:,1] = s[:,1] + s[:,2]
-    s_tot[:,2] = (s[:,3] + s[:,4] + s[:,5]) ./ (s[:,1] + s[:,2] + ε)
-    return s_tot
-end
-
-
 function weighted_cov(x::Vector{Float64},y::Vector{Float64}, w::Vector{Float64})
     return sum(w .* ((x .- sum(w .* x)) .* (y .- sum(w .* y))))
 end
-
-
-
-#Compute full trajectory solutions for plotting
 
 function full_model(paramvals::Vector{Float64}, vary_map::Vector{Any}, scaling::Int64, t_steps::Vector{Float64}, iv::Vector{Float64}, tmin::Float64,
    tmax::Float64, cycle::Float64, texp::Float64, pulse::Float64)
@@ -85,19 +49,14 @@ function full_model(paramvals::Vector{Float64}, vary_map::Vector{Any}, scaling::
    return sol.u, sol.u[end], sol.t
 end
 
-
 function full_trajectories(paramvals::Vector{Float64}, vary_map::Vector{Any}, scaling::Int64, t_steps::Vector{Float64}, iv::Vector{Float64}, age::Float64,
    cycle::Float64, pulse::Float64, t0::Float64, texp::Float64)
     local endpoint::Vector{Float64}
     local nsols::Int64
-    #distinguish between mean, variance & covariance indices for species of interest (exclude promoter)
-    #distinguish between mean, variance & covariance indices for species of interest
     gene_covidx::Vector{Int64} = [5,6]
-    #mRNA means and covariances
     meanidx::Vector{Int64} = [2,3]
     varidx::Vector{Int64} = [7,9]
-    covidx::Vector{Int64} = [8]    #off-diagonal covariances
-    #allcovidx::Vector{Int64} = [7:9;] #all covariances 
+    covidx::Vector{Int64} = [8] 
     if age > 0 && age < cycle
         nsols = floor((age-t0)/cycle) + 1
     else
@@ -133,7 +92,6 @@ function full_trajectories(paramvals::Vector{Float64}, vary_map::Vector{Any}, sc
     return vcat(sol...), vcat(timespan...)
 end
 
-
 function get_solutions(paramvals::Vector{Float64}, vary_map::Vector{Any}, n_steps::Int64, scaling::Int64, iv::Vector{Float64}, age::Float64, cycle::Float64, pulse::Float64, chase::Float64, t0::Float64)
     texp::Float64 = age - pulse - chase
     meanidx::Vector{Int64} = [2,3]
@@ -156,14 +114,9 @@ function get_solutions(paramvals::Vector{Float64}, vary_map::Vector{Any}, n_step
     return mean_mat, cov_mat, time_
 end
 
-
 function solution_plotter(paramvals::AbstractArray{Float64}, vary_map::Vector{Any}, n_steps::Int64, scaling::Int64, iv::Vector{Float64}, t0::Float64,
                 cycle::Float64, age::Float64, pulse::Float64, chase::Float64)
     spec_labels = ["unlabelled" "labelled"]
-    #mean_labels = reshape(["Mean(" * sl * ")" for sl in spec_labels], 1, :)
-    #cov_labels = reshape(["Cov(" * spec_labels[i] * "," * spec_labels[j] * ")" for i in 1:length(spec_labels) for j in i:length(spec_labels)], 1, :)
-    #varidx::Vector{Int64} = [1,5,8,10]
-    #covidx::Vector{Int64} = [2,3,4,6,7,9]
     mean_sol, cov_sol, timespan = get_solutions(paramvals, vary_map, scaling, n_steps, iv, age, cycle, pulse, chase, t0)
     error_bars = Matrix{Float64}(undef, (length(timespan),4))
     error_bars[:,1] = mean_sol[:,1] .- sqrt.(abs.(cov_sol[:,1]))
@@ -174,7 +127,6 @@ function solution_plotter(paramvals::AbstractArray{Float64}, vary_map::Vector{An
     pl = plot(timespan,
                 hcat(error_bars[:,1], error_bars[:,2]),
                 label = nothing,
-                #ylims = (0,180.0),
                 xlabel = "time",
                 ylabel = "mean transcript levels",
                 fillrange = mean_sol[:,1],
@@ -204,7 +156,6 @@ function solution_plotter(paramvals::AbstractArray{Float64}, vary_map::Vector{An
                 linewidth = 3,
                 x_ticks = false,
                 linecolor = [colours[1] colours[2]])
-    display(pl)
     return pl
 end
 
@@ -293,54 +244,38 @@ function plot_moments(s_mean::Vector{Float64}, s_ff::Vector{Float64}, m::Int64)
     return mean_plot,ff_plot
 end
 
-################################### Load data ##########################################
-uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment, gene_id = read_all_data("data/",".csv")
-total_data = uu_data + us_data + lu_data + ls_data
-
-ncells, ngenes = size(us_data)
-
-
-n_clusters = 5
-
-age, age_idx, mean_age, τ_ = age_clusters(theta, n_clusters, "equidistant")
-age_distribution = length.(age_idx)/ncells
-
-cells_per_id = [findall(x->x==e,experiment) for e in sort(unique(experiment))[2:end-1]]
-cells_per_age = [findall(x->x==τ,age) for τ in sort(unique(age))]
-cells_age_id = [[intersect(cells_age,cells_id) for cells_age in cells_per_age] for cells_id in cells_per_id]
-
-age_id_distribution = hcat([length.(cells) / sum(length.(cells)) for cells in cells_age_id]...)
-
-pulse_idx = findall(x->x<=6, experiment)
-tc_pulse = sum(total_data[pulse_idx,:],dims=2)[:,1]
-tc_pulse_age = [sum(total_data[intersect(cells,pulse_idx),:],dims=2)[:,1] for cells in cells_per_age]
-atc_pulse_age = mean.(tc_pulse_age)
-
-chase_idx = findall(x->x>=7, experiment)
-tc_chase = sum(total_data[chase_idx,:],dims=2)[:,1]
-tc_chase_age = [sum(total_data[intersect(cells,chase_idx),:],dims=2)[:,1] for cells in cells_per_age]
-atc_chase_age = mean.(tc_chase_age)
-
-mean_beta_pulse = 0.1
-ratios_pulse = [tc_pulse[i] / atc_pulse_age[age[pulse_idx[i]]] for i in 1:lastindex(pulse_idx)]
-betas_pulse = mean_beta_pulse .* ratios_pulse
-
-mean_beta_chase = 0.2
-ratios_chase = [tc_chase[i] / atc_chase_age[age[chase_idx[i]]] for i in 1:lastindex(chase_idx)]
-betas_chase = mean_beta_chase .* ratios_chase
-
-betas = Vector{Float64}(undef,ncells)
-betas[pulse_idx] = betas_pulse
-betas[chase_idx] = betas_chase
-
-
-##################################################################################################
-############################ Define model - inference framework ##################################
-##################################################################################################
-#matrix of experimental conditions: 1st col. - pulse, 2nd col. - chase
-condition_id = hcat([1/4,1/2,3/4,1,2,3,22,22,22,22,22],[0,0,0,0,0,0,0,1,2,4,6])
-cond_idx = [1:11;]
-
+function full_gene_realisation(m::Int64,θ::Vector{Float64},iv::Vector{Float64},agevec::Vector{Float64},cycle::Float64,pulsevec::Vector{Float64},chasevec::Vector{Float64},t0::Float64,
+                            n_steps::Int64,downsampling::Bool,betas::Vector{Float64},age::Vector{Float64},pulse_idx::Vector{Float64},chase_idx::Vector{Float64},age_id_distribution::Vector{Float64})
+    vary_flag = [[0,0,0,0],[0,0,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1]][m]
+    m_name = ["const_scaling","const_non_scaling","burst_freq","burst_size","decay_rate"][m]
+    plot_rate_name = ["const_scaling_synthesis","const_non_scaling_synthesis","burst_freq","burst_size","decay_rate"][m]
+    vary_map = get_vary_map(vary_flag,n_steps)
+    scaling = 1 * (!=(m,2))
+    #compute summary statistics
+    s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean = run_sim(θ,iv,agevec,cycle,pulsevec,chasevec,t0,vary_map,scaling,n_steps,downsampling,betas,age,pulse_idx,chase_idx,age_id_distribution);
+    #plot example single-cell realisation 
+    p = solution_plotter(θ,vary_map,scaling,n_steps,iv,t0,cycle,agevec[end],pulsevec[7],chasevec[7]);
+    savefig(p,"data/paper_figures/supplement/"*m_name*"_realisation.pdf")
+    #plot characteristic kinetic rate along the cell cycle
+    p = plot_rate(θ,vary_flag,n_steps,scaling,cycle,m);
+    savefig(p,"data/paper_figures/supplement/"*plot_rate_name*".pdf")
+    #plot cell cycle-dependent mean and fano factor
+    p1,p2 = plot_moments(s_pulse[:,1], s_pulse[:,2],m);
+    savefig(p1,"data/paper_figures/supplement/"*m_name*"_mean.pdf")
+    savefig(p2,"data/paper_figures/supplement/"*m_name*"_ff.pdf")
+    #plot labelling condition-specific ratios
+    p = plot_id_specific_stats(s_ratios, m, 1);
+    savefig(p,"data/paper_figures/supplement/"*m_name*"_ratios.pdf")
+    #plot labelling condition-specific mean correlations
+    p = plot_id_specific_stats(s_mean_corr, m, 2);
+    savefig(p,"data/paper_figures/supplement/"*m_name*"_mean_corr.pdf")
+    #plot labelling condition-specific correlations of means
+    p = plot_id_specific_stats(s_corr_mean, m, 3);
+    savefig(p,"data/paper_figures/supplement/"*m_name*"_corr_mean.pdf"
+end
+    
+condition_id = hcat([1/4,1/2,3/4,1,2,3,22,22,22,22,22],[0,0,0,0,0,0,0,1,2,4,6]);
+cond_idx = [1:11;];
 n_steps = length(τ_);
 iv = zeros(9);  
 iv[1] = 1/2;
@@ -350,179 +285,32 @@ agevec = τ_ .* cycle;
 pulsevec = condition_id[cond_idx,1];
 chasevec = condition_id[cond_idx,2];     
 downsampling = false;
-###################################################################################################
 
-m = 1
-#θ = log.(10,[0.5,1.0,20.0,0.1,0.7])
-vary_flag = [0,0,0,0]
-vary_map = get_vary_map(vary_flag,n_steps)
+# simulate one gene for each model
+################################################
 
-θ = log.(10,[0.5,1.0,20.0,0.1,0.7])
-#θ = fix_params(vary_map,1)[1,:]
-scaling = 1
-@time s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean = run_sim(θ,iv,agevec,cycle,pulsevec,chasevec,t0,vary_map,scaling,n_steps,downsampling,betas,age,pulse_idx,chase_idx,age_id_distribution);
+# constant scaling gene
+m = 1;
+θ = log.(10,[0.5,1.0,20.0,0.1,0.7]);
+full_gene_realisation(m,θ,iv,agevec,cycle,pulsevec,chasevec,t0,n_steps,downsampling,betas,age,pulse_idx,chase_idx,age_id_distribution)
 
-p = solution_plotter(θ, vary_map, scaling, n_steps, iv, t0, cycle, agevec[end], pulsevec[7], chasevec[7])
-#s = get_synthetic_data(θ,vary_map,scaling,n_steps,iv,agevec,cycle,pulsevec[7],chasevec[7],t0,downsampling,betas[pulse_idx],age[pulse_idx])
-savefig(p,"data/paper_figures/supplement/const_scaling_realisation.pdf")
+# constant non-scaling gene
+m = 2;
+θ = log.(10,[0.5,1.0,20.0,0.1,0.7]);
+full_gene_realisation(m,θ,iv,agevec,cycle,pulsevec,chasevec,t0,n_steps,downsampling,betas,age,pulse_idx,chase_idx,age_id_distribution)
 
-p = plot_rate(θ,vary_flag,n_steps,scaling,cycle,m)
-savefig(p,"data/paper_figures/supplement/fig_2/scaling_synthesis.pdf")
+# burst frequency gene
+m = 3;
+θ = log.(10,[0.1,0.1,30.0,0.1,0.1,1.0,15.0,0.1,0.7]);
+full_gene_realisation(m,θ,iv,agevec,cycle,pulsevec,chasevec,t0,n_steps,downsampling,betas,age,pulse_idx,chase_idx,age_id_distribution)
 
-p1,p2 = plot_moments(s_pulse[:,1], s_pulse[:,2], m)
-p1
-p2
-savefig(p1,"data/paper_figures/supplement/fig_2/const_scaling_mean.pdf")
-savefig(p2,"data/paper_figures/supplement/fig_2/const_scaling_ff.pdf")
+# burst size gene
+m = 4;
+θ = log.(10,[1.0,1.0,1.0,1.0,40.0,1.0,1.0,0.1,0.7]);
+full_gene_realisation(m,θ,iv,agevec,cycle,pulsevec,chasevec,t0,n_steps,downsampling,betas,age,pulse_idx,chase_idx,age_id_distribution)
 
-which_id_data = 1
-p = plot_id_specific_stats(s_ratios, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/const_scaling_ratios.pdf")
-
-which_id_data = 2
-p = plot_id_specific_stats(s_mean_corr, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/const_scaling_mean_corr.pdf")
-
-which_id_data = 3
-p = plot_id_specific_stats(s_corr_mean, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/const_scaling_corr_mean.pdf")
-
-
-m = 2
-θ = log.(10,[0.5,1.0,20.0,0.1,0.7])
-vary_flag = [0,0,0,0]
-vary_map = get_vary_map(vary_flag,n_steps)
-scaling = 0
-
-@time s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean = run_sim(θ,iv,agevec,cycle,pulsevec,chasevec,t0,vary_map,scaling,n_steps,downsampling,betas,age,pulse_idx,chase_idx,age_id_distribution);
-
-
-p = solution_plotter(θ, vary_map, scaling, n_steps, iv, t0, cycle, agevec[end], pulsevec[7], chasevec[7])
-#s = get_synthetic_data(θ,vary_map,scaling,n_steps,iv,agevec,cycle,pulsevec[7],chasevec[7],t0,downsampling,betas[pulse_idx],age[pulse_idx])
-savefig(p,"data/paper_figures/supplement/const_non_scaling_realisation.pdf")
-
-p = plot_rate(θ,vary_flag,n_steps,scaling,cycle,m)
-savefig(p,"data/paper_figures/supplement/fig_2/non_scaling_synthesis.pdf")
-
-
-which_id_data = 1
-p = plot_id_specific_stats(s_ratios, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/const_non_scaling_ratios.pdf")
-
-which_id_data = 2
-p = plot_id_specific_stats(s_mean_corr, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/const_non_scaling_mean_corr.pdf")
-
-which_id_data = 3
-p = plot_id_specific_stats(s_corr_mean, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/const_non_scaling_corr_mean.pdf")
-
-p1,p2 = plot_moments(s_pulse[:,1], s_pulse[:,2], m)
-p1
-p2
-savefig(p1,"data/paper_figures/supplement/fig_2/const_non_scaling_mean.pdf")
-savefig(p2,"data/paper_figures/supplement/fig_2/const_non_scaling_ff.pdf")
-
-
-m = 3
-θ = log.(10,[0.1,0.1,30.0,0.1,0.1,1.0,15.0,0.1,0.7])
-vary_flag = [1,0,0,0]
-vary_map = get_vary_map(vary_flag,n_steps)
-scaling = 1
-@time s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean = run_sim(θ,iv,agevec,cycle,pulsevec,chasevec,t0,vary_map,scaling,n_steps,downsampling,betas,age,pulse_idx,chase_idx,age_id_distribution);
-
-p = solution_plotter(θ, vary_map, scaling, n_steps, iv, t0, cycle, agevec[end], pulsevec[7], chasevec[7])
-#s = get_synthetic_data(θ,vary_map,scaling,n_steps,iv,agevec,cycle,pulsevec[7],chasevec[7],t0,downsampling,betas[pulse_idx],age[pulse_idx])
-savefig(p,"data/paper_figures/supplement/fig_2/burst_freq_realisation.pdf")
-
-p = plot_rate(θ,vary_flag,n_steps,scaling,cycle,m)
-savefig(p,"data/paper_figures/supplement/fig_2/burst_freq.pdf")
-
-
-p1,p2 = plot_moments(s_pulse[:,1], s_pulse[:,2], m)
-p1
-p2
-savefig(p1,"data/paper_figures/supplement/fig_2/burst_freq_mean.pdf")
-savefig(p2,"data/paper_figures/supplement/fig_2/burst_freq_ff.pdf")
-
-
-which_id_data = 1
-p = plot_id_specific_stats(s_ratios, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/burst_freq_ratios.pdf")
-
-which_id_data = 2
-p = plot_id_specific_stats(s_mean_corr, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/burst_freq_mean_corr.pdf")
-
-which_id_data = 3
-p = plot_id_specific_stats(s_corr_mean, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/burst_freq_corr_mean.pdf")
-
-
-m = 4
-θ = log.(10,[1.0,1.0,1.0,1.0,40.0,1.0,1.0,0.1,0.7])
-vary_flag = [0,0,1,0]
-vary_map = get_vary_map(vary_flag,n_steps)
-scaling = 1
-@time s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean = run_sim(θ,iv,agevec,cycle,pulsevec,chasevec,t0,vary_map,scaling,n_steps,downsampling,betas,age,pulse_idx,chase_idx,age_id_distribution);
-
-
-p = solution_plotter(θ, vary_map, scaling, n_steps, iv, t0, cycle, agevec[end], pulsevec[7], chasevec[7])
-savefig(p,"data/paper_figures/supplement/fig_2/burst_size_realisation.pdf")
-
-p = plot_rate(θ,vary_flag,n_steps,scaling,cycle,m)
-savefig(p,"data/paper_figures/supplement/fig_2/burst_size.pdf")
-
-
-p1,p2 = plot_moments(s_pulse[:,1], s_pulse[:,2], m)
-p1
-p2
-savefig(p1,"data/paper_figures/supplement/fig_2/burst_size_mean.pdf")
-savefig(p2,"data/paper_figures/supplement/fig_2/burst_size_ff.pdf")
-
-
-
-which_id_data = 1
-p = plot_id_specific_stats(s_ratios, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/burst_size_ratios.pdf")
-
-which_id_data = 2
-p = plot_id_specific_stats(s_mean_corr, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/burst_size_mean_corr.pdf")
-
-which_id_data = 3
-p = plot_id_specific_stats(s_corr_mean, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/burst_size_corr_mean.pdf")
-
-m = 5
-θ = log.(10,[2.0,1.0,85.0,2.0,3.0,1.0,1.0,1.5,0.7])
-vary_flag = [0,0,0,1]
-vary_map = get_vary_map(vary_flag,n_steps)
-scaling = 1
-@time s_pulse,s_chase,s_ratios,s_mean_corr,s_corr_mean = run_sim(θ,iv,agevec,cycle,pulsevec,chasevec,t0,vary_map,scaling,n_steps,downsampling,betas,age,pulse_idx,chase_idx,age_id_distribution);
-
-p = solution_plotter(θ, vary_map, scaling, n_steps, iv, t0, cycle, agevec[end], pulsevec[7], chasevec[7])
-#s = get_synthetic_data(θ,vary_map,scaling,n_steps,iv,agevec,cycle,pulsevec[7],chasevec[7],t0,downsampling,betas[pulse_idx],age[pulse_idx])
-savefig(p,"data/paper_figures/supplement/fig_2/decay_rate_realisation.pdf")
-
-p = plot_rate(θ,vary_flag,n_steps,scaling,cycle,m)
-savefig(p,"data/paper_figures/supplement/fig_2/decay_rate.pdf")
-
-p1,p2 = plot_moments(s_pulse[:,1], s_pulse[:,2], m)
-p1
-p2
-savefig(p1,"data/paper_figures/supplement/fig_2/decay_rate_mean.pdf")
-savefig(p2,"data/paper_figures/supplement/fig_2/decay_rate_ff.pdf")
-
-which_id_data = 1
-p = plot_id_specific_stats(s_ratios, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/decay_rate_ratios.pdf")
-
-which_id_data = 2
-p = plot_id_specific_stats(s_mean_corr, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/decay_rate_mean_corr.pdf")
-
-which_id_data = 3
-p = plot_id_specific_stats(s_corr_mean, m, which_id_data)
-savefig(p,"data/paper_figures/supplement/fig_2/decay_rate_corr_mean.pdf")
+# decay rate gene
+m = 5;
+θ = log.(10,[2.0,1.0,85.0,2.0,3.0,1.0,1.0,1.5,0.7]);
+full_gene_realisation(m,θ,iv,agevec,cycle,pulsevec,chasevec,t0,n_steps,downsampling,betas,age,pulse_idx,chase_idx,age_id_distribution)
 
