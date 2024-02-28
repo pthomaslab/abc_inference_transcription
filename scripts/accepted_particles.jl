@@ -1,8 +1,8 @@
-f_1 = JDFFile("data/simulations/errors/error_const.jdf");
-f_2 = JDFFile("data/simulations/errors/error_const_const.jdf");
-f_3 = JDFFile("data/simulations/errors/error_kon.jdf");
-f_4 = JDFFile("data/simulations/errors/error_alpha.jdf");
-f_5 = JDFFile("data/simulations/errors/error_gamma.jdf");
+f_1 = JDFFile("data/errors/error_const.jdf");
+f_2 = JDFFile("data/errors/error_const_const.jdf");
+f_3 = JDFFile("data/errors/error_kon.jdf");
+f_4 = JDFFile("data/errors/error_alpha.jdf");
+f_5 = JDFFile("data/errors/error_gamma.jdf");
 
 model_names = ["const","const_const","kon","alpha","gamma"];
 
