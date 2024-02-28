@@ -1,10 +1,10 @@
 # Bayesian inference of transcription regulation from time-resolved scRNA-seq data
 This repository contains code produced for modelling and data analysis in the manuscript **Global transcription regulation revealed from dynamical correlations in time-resolved single-cell RNA-sequencing**.
 
-You can follow the guidance below to obtain the data and reproduce the results of the manuscript by running the script `wrapper.jl`. The subsections of the README file correspond to different sections of code in the `wrapper.jl` file.
+You can follow the guidance below to obtain the data and reproduce main results of the manuscript by running the script `wrapper.jl`. The subsections of the README file correspond to the different sections of code in the `wrapper.jl` file.
 
 ### 1. Data
-The original scEU-seq data that we analyse were generated and published by the authors of <https://www.science.org/doi/10.1126/science.aax3072>. You can downloaded the following data as CSV files from the GEO repository with accession number [GSE128365](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE128365):
+The original scEU-seq data that we analyse were generated and published by the authors of <https://www.science.org/doi/10.1126/science.aax3072>. The data can be downloaded as CSV files from the GEO repository with accession number [GSE128365](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE128365):
 
 |                             Name                               |        Description        |           
 | ---------------------------------------------------------------|---------------------------|
