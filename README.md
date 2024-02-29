@@ -1,10 +1,10 @@
 # Bayesian inference of transcription regulation from time-resolved scRNA-seq data
 This repository contains code produced for modelling and data analysis in the manuscript **Global transcription regulation revealed from dynamical correlations in time-resolved single-cell RNA-sequencing**.
 
-You can follow the guidance below to obtain the data and reproduce main results of the manuscript by running the script `wrapper.jl`. The subsections of the README file correspond to the different sections of code in the `wrapper.jl` file.
+You can follow the guidance below to obtain the data and reproduce main results of the manuscript by running the script `wrapper.jl`. The subsections of the README file correspond to the different sections of code in the `wrapper.jl` file. It is suggested that the folders `data` and `scripts` and the file `wrapper.jl` of this repository are downloaded and placed in your local directory. Additionally, it is recommended that all data files contained in the Zenodo repository are downloaded and placed in the same `data` folder.
 
 ### 1. Data
-The original scEU-seq data that we analyse were generated and published by the authors of <https://www.science.org/doi/10.1126/science.aax3072>. The data can be downloaded as CSV files from the GEO repository with accession number [GSE128365](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE128365):
+The original scEU-seq data that we analyse were generated and published by the authors of <https://www.science.org/doi/10.1126/science.aax3072>. The data can be downloaded as CSV files from the GEO repository with accession number [GSE128365](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE128365). It is recommended that the downloaded data are moved to the folder `data/raw_data/`. 
 
 |                             Name                               |        Description        |           
 | ---------------------------------------------------------------|---------------------------|
@@ -13,8 +13,6 @@ The original scEU-seq data that we analyse were generated and published by the a
 | GSE128365_SupplementaryData_RPE1_labeled_unsplicedUMI.csv.gz   |  labelled unspliced UMIs  |  
 | GSE128365_SupplementaryData_RPE1_labeled_splicedUMI.csv.gz     |   labelled spliced UMIs   |  
 | GSE128365_SupplementaryData_RPE1_metadata.csv.gz               |   cell-specific metadata  |
-
-It is suggested that the folder `data` of this repository is downloaded and placed in your local directory as it contains other necessary datasets. Additionally, it is recommended that all data files contained in the Zenodo repository are downloaded and placed in the same `data` folder.
 
 
 #### Load required packages and raw data
