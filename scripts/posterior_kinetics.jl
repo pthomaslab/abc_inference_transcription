@@ -128,134 +128,29 @@ p = violin!(map_sets[4][:,vary_maps[4][4]], linewidth = 1,linealpha = 0.7, color
 p = violin!(vec(map_sets[5][:,vary_maps[5][4]]), linewidth = 1, linealpha = 0.7,color = col[3], label = false, outliers = false)
 savefig(p, "data/paper_figures/figure_2/decay_rates.svg")
 
-#=
-############################### mRNA half-lives #######################################
-cycle = 20.0
-dilution_rate = 0.0; # log(2) / cycle;
 
-half_life = [log(2) ./ (10 .^m_s[:,vary_maps[i][4]]) for (i,m_s) in enumerate(map_sets[1:4])];
-half_life = push!(half_life, log(2) ./ ((10 .^mean(map_sets[5][:,vary_maps[5][4]],dims=2)[:,1]) .+ dilution_rate))
+#relationship of labelling efficiency with gene length
 
-col = [:skyblue4, :lightcyan4]
-p = boxplot(half_life[1], linewidth = 1, color = col[1], label = false, legendfontsize = 11, ylims = (0.0,20.0),
-background_color_legend = :transparent,legend = :topright,fg_legend = :transparent, size = (400,300), xtickfontsize = 11,xticks = ([1,2],["scaling genes","non-scaling genes"]), ylabel = "mRNA half-life (h)", outliers = false)
-p = boxplot!(half_life[2], linewidth = 1, color = col[2], label = false, dpi = 300, outliers = false)
-savefig(p, "data/paper_figures/figure_4/half_life.svg")
-savefig(p, "data/paper_figures/figure_4/half_life.png")
+col = [:skyblue4, :lightcyan3, :coral3, :mediumpurple3, :goldenrod1];
+genome_df = CSV.read("data/genes_loc_H.csv",DataFrame);
 
-savefig(p, "data/paper_figures/figure_4/half_life_no_deg.svg")
-savefig(p, "data/paper_figures/figure_4/half_life_deg.png")
+sub_genes = [sel[sort(findall(x->x in genome_df[:,5], gene_names[sel]))] for sel in sel_genes];
+lambdas = [map_sets[m][sort(findall(x->x in genome_df[:,5], gene_names[sel_genes[m]])),end] for m in 1:5];
 
-
-col = [:skyblue4, :seagreen4, :gold]
-p = boxplot(half_life[3], linewidth = 1, color = col[1], label = false, legendfontsize = 11, ylims = (0.0,40),
-background_color_legend = :transparent,legend = :topright,fg_legend = :transparent, size = (400,300), xtickfontsize = 11, bottom_margin = 2mm,
-xticks = ([1,2,3],["burst frequency \ngenes","burst size \ngenes", "decay rate \ngenes"]), ylabel = "mRNA half-life (h)", dpi = 300, outliers = false)
-p = boxplot!(half_life[4], linewidth = 1, color = col[2], label = false, outliers = false)
-p = boxplot!(half_life[5], linewidth = 1, color = col[3], label = false, outliers = false)
-savefig(p, "data/paper_figures/figure_5/half_life.svg")
-savefig(p, "data/paper_figures/figure_5/half_life.png")
-
-#compare with scSLAM-seq
-scslam = CSV.read("scSLAMseq_hf.csv",DataFrame)
-gene_vec = vcat(sel_genes[1:2]...)
-idx = [];
-idx_1 = [];
-for (i,g) in enumerate(uppercase.(gene_names[gene_vec]))
-    x = findall(x->x==g,uppercase.(scslam[:,1]))
-    if x != []
-        push!(idx,i)
-        push!(idx_1,x[1])
+loc_idx = [[],[],[],[],[]];
+for m in 1:5
+    for g in gene_names[sub_genes[m]]
+        push!(loc_idx[m],findall(x->x==g,genome_df[:,5])[1])
     end
 end
 
-
-hl = vcat(half_life[1:2]...)[idx]
-hl_1 = scslam[idx_1,2]
-    
-p = scatter(hl_1, hl, size = (400,300), label = false,ylabel = "mRNA half-life (scEU-seq)",xlabel = "mRNA half-life (scSLAM-seq)",
-                ylims = (-3,100), markeralpha = 0.6, color = :skyblue4);
-rho = StatsBase.corspearman(hl,hl_1)
-p = plot!([0:maximum(hl_1);],[0:maximum(hl_1);],label = false,linewidth = 4, linestyle = :dash, top_margin = 2mm, color = :darkorange2, linealpha=0.75, dpi = 300)
-p = annotate!(35,60,text("Spearman's ρ = $(round(rho,digits = 2))", 11, color = :darkorange2))
-savefig(p, "data/paper_figures/figure_4/half_life_scSLAM.svg")
-savefig(p, "data/paper_figures/figure_4/half_life_scSLAM.png")
-
-
-gene_vec = vcat(sel_genes[3:5]...)
-idx = [];
-idx_1 = [];
-for (i,g) in enumerate(uppercase.(gene_names[gene_vec]))
-    x = findall(x->x==g,uppercase.(scslam[:,1]))
-    if x != []
-        push!(idx,i)
-        push!(idx_1,x[1])
-    end
+gene_length = [genome_df[loc_idx[m],4] .- genome_df[loc_idx[m],3] for m in 1:5];
+rho = corspearman(10 .^vcat(lambdas...),log.(10,vcat(gene_length...)));
+labs = ["constant scaling genes","constant non-scaling genes","burst frequency genes","burst size genes","decay rate genes"];
+p = scatter(log.(10,gene_length[1]), 10 .^lambdas[1],  y_lims = (0.1,1.1), x_lims = (2.0,7.5), ylabel = "labelling efficiency", xlabel = "log₁₀(gene length)", legendfontsize = 7, xlabelfontsize = 13, ylabelfontsize = 13,
+        color = col[1], label = labs[1], legend = :bottomright, markeralpha = 0.9, markersize = 5, size = (450,350), dpi = 300);
+for i in 2:5
+    p = scatter!(log.(10,gene_length[i]), 10 .^lambdas[i], color = col[i], markeralpha = 0.9, markersize = 5, label = labs[i])
 end
-
-hl = vcat(half_life[3:5]...)[idx]
-hl_1 = scslam[idx_1,2]
-  
-p = scatter(hl_1, hl, size = (400,300), label = false,ylabel = "mRNA half-life (scEU-seq)",xlabel = "mRNA half-life (scSLAM-seq)",
-                 ylims = (-3,40), markeralpha = 0.6, color = :skyblue4);
-rho = StatsBase.corspearman(hl,hl_1)
-p = plot!([0:maximum(hl_1);],[0:maximum(hl_1);],label = false,linewidth = 4, linestyle = :dash, top_margin = 2mm, color = :darkorange2, linealpha=0.75, dpi = 300)
-p = annotate!(7,25,text("Spearman's ρ = $(round(rho,digits = 2))", 11, color = :darkorange2))
-savefig(p, "data/paper_figures/figure_4/half_life_nc_scSLAM.svg")
-savefig(p, "data/paper_figures/figure_4/half_life_nc_scSLAM.png")
-
-
-
-#compare with sci-fate
-scifate = CSV.read("scifate_hf.csv",DataFrame)
-gene_vec = vcat(sel_genes[1:2]...)
-idx = [];
-idx_1 = [];
-ids_1 = [split(id,".")[1] for id in scifate[:,1]]
-for (i,g) in enumerate(ids[gene_vec])
-    x = findall(x->x==g,ids_1)
-    if x != []
-        push!(idx,i)
-        push!(idx_1,x[1])
-    end
-end
-
-
-
-hl = vcat(half_life[1:2]...)[idx]
-hl_1 = scifate[idx_1,3]
-   
-p = scatter(hl_1, hl, size = (400,300), label = false,ylabel = "mRNA half-life (scEU-seq)",xlabel = "mRNA half-life (sci-fate)",
-               ylims = (-3,100), markeralpha = 0.6, color = :skyblue4);
-rho = StatsBase.corspearman(hl,hl_1)
-p = plot!([0:maximum(hl_1);],[0:maximum(hl_1);],label = false,linewidth = 4, linestyle = :dash, top_margin = 2mm, color = :darkorange2, linealpha=0.75, dpi = 300)
-p = annotate!(88,40,text("Spearman's ρ = $(round(rho,digits = 2))", 11, color = :darkorange2))
-#p = annotate!(88,47,text("$(length(idx)) common genes", 11))
-
-savefig(p, "data/paper_figures/figure_4/half_life_scifate.svg")
-savefig(p, "data/paper_figures/figure_4/half_life_scifate.png")
-
-gene_vec = vcat(sel_genes[3:5]...)
-idx = [];
-idx_1 = [];
-ids_1 = [split(id,".")[1] for id in scifate[:,1]]
-for (i,g) in enumerate(ids[gene_vec])
-    x = findall(x->x==g,ids_1)
-    if x != []
-        push!(idx,i)
-        push!(idx_1,x[1])
-    end
-end
-
-hl = vcat(half_life[3:5]...)[idx]
-hl_1 = scifate[idx_1,3]
-p = scatter(hl_1, hl, size = (400,300), label = false,ylabel = "mRNA half-life (scEU-seq)",xlabel = "mRNA half-life (sci-fate)",
-                ylims = (-3,40), markeralpha = 0.6, color = :skyblue4);
-rho = StatsBase.corspearman(hl,hl_1)
-p = plot!([0:maximum(hl_1);],[0:maximum(hl_1);],label = false,linewidth = 4, linestyle = :dash, top_margin = 2mm, color = :darkorange2, linealpha=0.75, dpi = 300)
-p = annotate!(15,23,text("Spearman's ρ = $(round(rho,digits = 2))", 11, color = :darkorange2))
-#p = annotate!(15,52,text("$(length(idx)) common genes", 11))
-
-savefig(p, "data/paper_figures/figure_4/half_life_nc_scifate.svg")
-savefig(p, "data/paper_figures/figure_4/half_life_nc_scifate.png")
-=#
+p = annotate!(4.5,0.15,text("overall Spearman's ρ = $(round(rho,digits = 2))", 12, color = :lightcyan4));
+savefig(p,"data/paper_figures/figure_3/gene_length_lambdas.svg")
