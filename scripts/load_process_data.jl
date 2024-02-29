@@ -56,6 +56,7 @@ function age_clusters(theta::Vector{Float64}, n_clusters::Int64)
     return clusters, τ_
 end
 
+dir = "data/raw_data/"; 
 uu_data, us_data, lu_data, ls_data, theta, rfp, gfp, experiment = read_all_data(dir,".csv");
 
 #total counts matrix:
@@ -81,3 +82,12 @@ age_id_distribution = [length.(cells) ./ n_cells_id for cells in cells_age_id];
 age_dist_pulse = length.([intersect(cells,pulse_idx) for cells in cells_per_age]) ./ length(pulse_idx);
 age_dist_chase = length.([intersect(cells,chase_idx) for cells in cells_per_age]) ./ length(chase_idx);
 
+
+
+########## create new folders for figures ##########
+mkdir("paper_figures/");
+mkdir("paper_figures/figure_2/");
+mkdir("paper_figures/figure_3/");
+mkdir("paper_figures/figure_4/");
+mkdir("paper_figures/figure_5/");
+mkdir("paper_figures/supplement/");
