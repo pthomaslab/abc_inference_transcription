@@ -48,7 +48,7 @@ We proceed with model selection, which involves 2 steps: First, for each gene, w
 Next, we can inspect the inferred posterior distributions of kinetic rate parameters. We can pick a model index `m` $=1, \dots ,5$ and a gene index `g` and inspect the marginal posterior densities of its parameters or pairs of parameters. We also plot the distributions of point estimates of the kinetic rates across genes and models. Additionally, we compare the inferred gene-specific labelling efficiencies with gene lengths.  
 
 ### 5. Statistics recovery and noise decomposition
-We can use the inferred parameters and the model to recover statistics of gene expression: we obtain model predictions for the mean and noise levels of gene expression in the absence of technical (downsampling) noise. All the computed statistics in this step can be found in the `recovered_statistics/` folder. 
+We can use the inferred parameters and the model to recover statistics of gene expression: we obtain model predictions for the mean and noise levels of gene expression in the absence of technical (downsampling) noise. All the statistics computed in this step can be found in the `recovered_statistics/` folder. 
 
 ### 6. Constant genes: Scaling properties of gene expression with cell size
 We analyse the 2 classes of constant genes (scaling and non-scaling) to reveal scaling properties of gene expression with cell size. We compare the 2 groups of genes with respect to their mean expression fold change, mean expression rate of change, levels of cell cycle variation and mRNA degradation rates.
