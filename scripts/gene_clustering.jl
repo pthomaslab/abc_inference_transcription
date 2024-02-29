@@ -51,8 +51,8 @@ mean_data = hcat([mean(t_data[cells,:], dims = 1)[1,:] for cells in cells_per_ag
 mean_ccp = [mean_data[sel_,:] for sel_ in sel_genes];
 
 #model-recovered mean expression
-s_u_mean = [[readdlm("Julia/recovered_statistics/"*mn*"/"*id*"/mean_u.txt") for id in id_label] for mn in model_names];
-s_l_mean = [[readdlm("Julia/recovered_statistics/"*mn*"/"*id*"/mean_l.txt") for id in id_label] for mn in model_names];
+s_u_mean = [[readdlm("data/recovered_statistics/"*mn*"/"*id*"/mean_u.txt") for id in id_label] for mn in model_names];
+s_l_mean = [[readdlm("data/recovered_statistics/"*mn*"/"*id*"/mean_l.txt") for id in id_label] for mn in model_names];
 s_mean = [s_u .+ s_l for (s_u,s_l) in zip(s_u_mean,s_l_mean)];
 s_mean_ccp = [sm[7] for sm in s_mean];
 
