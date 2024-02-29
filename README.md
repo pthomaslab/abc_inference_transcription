@@ -32,7 +32,7 @@ We next estimate cell-specific capture efficiencies from the data, using each ce
 After pre-processing the data, we proceed with computing all summary statistics that we will need for inference. We obtain the matrices `pulse_mean`,`pulse_ff`,`chase_mean`,`chase_ff`,`ratio_data`,`mean_corr_data`,`corr_mean_data`, as well as the estimates for the standard error of these statistics, `pulse_mean_se`,`pulse_ff_se`,`chase_mean_se`,`chase_ff_se`,`ratio_data_se`,`mean_corr_data_se`,`corr_mean_data_se`, computed using bootstrapping.
 
 ### 2. Modelling and ABC simulations
-We define the model and we run example realisations of the 5 gene models (constant scaling, constant non-scaling, burst frequency, burst size and decay rate). This produces plots of all summary statistics and of the characteristic kinetic rate of the simulated gene.
+We define the model and we run example realisations of the 5 gene models (constant scaling, constant non-scaling, burst frequency, burst size and decay rate). This produces plots of the summary statistics and the characteristic kinetic rate of each simulated gene.
 
 We next set-up the ABC framework. We sample $M = 5 \cdot 10^6$ parameter sets from our prior distribution and numerically simulate our 5 models. We use our estimated capture efficiencies to add technical noise to the output of our models and then we generate summary statistics. We determine a model index `m` $=1, \dots ,5$, corresponding to the $5$ models we want to simulate, the number of simulations (sampled parameter sets) `n_trials` that we want to run, as well as a `submit` index that is used to distinguish multiple parellel simulation runs (e.g. in a high-performance computing cluster).
 
