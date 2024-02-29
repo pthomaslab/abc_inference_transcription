@@ -44,13 +44,9 @@ vary_map = get_vary_map(vary_flag,n_steps);
 scaling = 1 * !=(m,2);
 ###################################################################################################
 
+id_labels = ["pulse_15", "pulse_30", "pulse_45", "pulse_60", "pulse_120", "pulse_180", "chase_0", "chase_60", "chase_120", "chase_240", "chase_360"];
 
-id_labels = ["pulse_15", "pulse_30", "pulse_45",
-                "pulse_60", "pulse_120", "pulse_180", "chase_0",
-                         "chase_60", "chase_120", "chase_240", "chase_360"];
-
-
-@time for i in 1:length(sel_genes)
+@time for i in 1:size(maps)[1]
     s::Vector{Matrix{Float64}} = run_part_sim(maps[i,:],iv,agevec,cycle,pulsevec,chasevec,t0,vary_map,scaling,n_steps,downsampling,betas,age)
     for (k,id) in enumerate(id_labels)
         open("data/recovered_statistics/"*model_name*"/"*id*"/mean_u.txt", "a") do io
