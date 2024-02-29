@@ -1,7 +1,7 @@
 ############################################################################################################
 # 1. Data
 
-########## Load required packages and raw data ########## 
+#load required packages
 using DifferentialEquations
 using Sundials
 using DelimitedFiles
@@ -15,16 +15,13 @@ using Plots.PlotMeasures
 using Colors
 using StatsPlots
 using Catalyst
-using LsqFit
 using Distances
 using Clustering
 
 Plots.default(dpi = 200, size = (400,300), fg_legend = :transparent, background_color_legend = :transparent);
-
-dir = "~/raw_data/";  #edit with your personal directory
-
+ 
 #load raw data
-include("scripts/load_data.jl")
+include("scripts/load_process_data.jl")
 
 #gene filtering
 include("scripts/gene_selection.jl")
