@@ -48,7 +48,7 @@ function compute_trunc_errors(pulse_mean::Matrix{Float64},pulse_mean_se::Matrix{
     corr_mean_data::Matrix{Float64},corr_mean_se::Matrix{Float64},s_pulse_mean::Matrix{Float64},s_pulse_ff::Matrix{Float64},
     s_chase_mean::Matrix{Float64},s_chase_ff::Matrix{Float64},s_ratios::Matrix{Float64},s_mean_corr::Matrix{Float64},s_corr_mean::Matrix{Float64},model_name::String)
     local io::IOStream
-    n_summary_stats::Int64 = 4*size(pulse_data)[2] + 3*size(ratio_data)[2]
+    n_summary_stats::Int64 = 4*size(pulse_mean)[2] + 3*size(ratio_data)[2]
     for i in 1:size(s_ratios)[1]
         err = Vector{Float64}(undef,size(ratio_data)[1])
         for j in 1:size(ratio_data)[1]
