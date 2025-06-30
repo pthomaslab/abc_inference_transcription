@@ -1,14 +1,19 @@
 function get_rate(θ::Vector{Float64}, vary_map::Vector{Any}, scaling::Int64, t_steps::Vector{Float64}, cycle::Float64, t::Float64)::Vector{Float64}
     p = Vector{Float64}(undef,length(vary_map))
     for i in 1:length(vary_map)
+        if i==3 
+            txn_size = scaling * log10(size_scaling(cycle,t))
+        else
+            txn_size = 0.0
+        end
         if length(vary_map[i]) == 1
-            p[i] = θ[vary_map[i]] + scaling * log10(1.0 + ==(i,3) * (transcription_rate(cycle,t) - 1.0))
+            p[i] = θ[vary_map[i]] + txn_size
         else
             for j in 1:length(t_steps)-1
                 if mod(t,cycle) > t_steps[j] && mod(t,cycle) <= t_steps[j+1]
-                    p[i] =  θ[vary_map[i][j]] + scaling * log10(1.0 + ==(i,3) * (transcription_rate(cycle,t) - 1.0))
+                    p[i] =  θ[vary_map[i][j]] + txn_size
                 elseif mod(t,cycle) == 0.0
-                    p[i] =  θ[vary_map[i][1]] + scaling * log10(1.0 + ==(i,3) * (transcription_rate(cycle,t) - 1.0))
+                    p[i] =  θ[vary_map[i][1]] + txn_size
                 end
             end
         end
@@ -17,8 +22,7 @@ function get_rate(θ::Vector{Float64}, vary_map::Vector{Any}, scaling::Int64, t_
 end
 
 
-
-function transcription_rate(cycle::Float64,t::Float64)::Float64
+function size_scaling(cycle::Float64,t::Float64)::Float64
     return 1.0 + (mod(t,cycle)/cycle) * (<(t,cycle)) + (==(t,cycle))
 end
 
@@ -37,6 +41,7 @@ function get_vary_map(vary_flag::Vector{Int64},n_steps::Int64)
     end
     return keys
 end
+
 #=
 function get_vary_matrix(vary_map::Vector{Any},n_steps::Int64)
     mat = Matrix{Int64}(undef,(length(vary_map),n_steps))
@@ -59,18 +64,25 @@ function labelling(lambda::Float64, texp::Float64, pulse::Float64, t::Float64)::
 end
 
 
-function f(μ::Vector{Float64},p::Vector{Float64},λ::Float64)
-    y = Vector{Float64}(undef,9)
-    y[1] = p[1]*(1-μ[1]) - p[2]*μ[1]
-    y[2] = (1-λ)*p[3]*μ[1] - p[4]*μ[2]
-    y[3] = λ*p[3]*μ[1] - p[4]*μ[3]
-    y[4] = p[2]*μ[1] + p[1]*(1-μ[1]) - 2*(p[1]+p[2])*μ[4]
-    y[5] = p[3]*(1-λ)*μ[4] - (p[1]+p[2]+p[4])*μ[5]
-    y[6] = p[3]*λ*μ[4] - (p[1]+p[2]+p[4])*μ[6]
-    y[7] = p[3]*(1-λ)*μ[1] + p[4]*μ[2] + 2*p[3]*(1-λ)*μ[5] - 2*p[4]*μ[7]
-    y[8] = p[3]*λ*μ[5] + p[3]*(1-λ)*μ[6] - 2*p[4]*μ[8]
-    y[9] = p[3]*λ*μ[1] + p[4]*μ[3] + 2*p[3]*λ*μ[6] - 2*p[4]*μ[9]
-    return y
+function momentodes(dy, y, θ, t, cycle, texp, pulse, vary_map, t_steps, scaling)
+    p = 10 .^(get_rate(θ[1:end-1], vary_map, scaling, t_steps, cycle, t))
+    λ = labelling(θ[end], texp, pulse, t)
+    dy .= f(y,p,λ)
+end
+
+
+function f(y::Vector{Float64},p::Vector{Float64},λ::Float64)
+    dy = Vector{Float64}(undef,9)
+    dy[1] = p[1]*(1-y[1]) - p[2]*y[1]
+    dy[2] = (1-λ)*p[3]*y[1] - p[4]*y[2]
+    dy[3] = λ*p[3]*y[1] - p[4]*y[3]
+    dy[4] = p[2]*y[1] + p[1]*(1-y[1]) - 2*(p[1]+p[2])*y[4]
+    dy[5] = p[3]*(1-λ)*y[4] - (p[1]+p[2]+p[4])*y[5]
+    dy[6] = p[3]*λ*y[4] - (p[1]+p[2]+p[4])*y[6]
+    dy[7] = p[3]*(1-λ)*y[1] + p[4]*y[2] + 2*p[3]*(1-λ)*y[5] - 2*p[4]*y[7]
+    dy[8] = p[3]*λ*y[5] + p[3]*(1-λ)*y[6] - 2*p[4]*y[8]
+    dy[9] = p[3]*λ*y[1] + p[4]*y[3] + 2*p[3]*λ*y[6] - 2*p[4]*y[9]
+    return dy
 end
 
 #ode model definition conditioning on labelling periods
